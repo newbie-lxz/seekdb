@@ -46,6 +46,39 @@ SELECT id FROM docs WHERE MATCH(en) AGAINST('+database -audit' IN BOOLEAN MODE) 
 SELECT id FROM docs WHERE MATCH(cn) AGAINST('数据库 数据库') ORDER BY id;
 SELECT id FROM docs WHERE MATCH(en) AGAINST('missingtoken') ORDER BY id;
 SELECT id FROM docs WHERE MATCH(en) AGAINST('') ORDER BY id;
+# Relevance can be omitted only when every use observes membership.
+INSERT INTO docs VALUES (6, NULL, NULL), (7, '', ''), (8, '数据库', 'database');
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit');
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') > 0 ORDER BY id;
+SELECT id FROM docs WHERE 0 < MATCH(en) AGAINST('database audit') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') AND id > 1 ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') OR id=4 ORDER BY id;
+SELECT id FROM docs WHERE NOT MATCH(en) AGAINST('database audit') ORDER BY id;
+SELECT id, ROUND(MATCH(en) AGAINST('database audit'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY score DESC, id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY MATCH(en) AGAINST('database audit') DESC, id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') > 0.5 ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') = 1 ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') <= 0 ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') IS NULL ORDER BY id;
+SELECT id, MATCH(en) AGAINST('database audit') > 0 AS hit FROM docs ORDER BY id;
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') LIMIT 2 OFFSET 1) t;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('+database -audit' IN BOOLEAN MODE) ORDER BY id;
+--error ER_SYNTAX_ERROR
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database ~audit' IN BOOLEAN MODE) ORDER BY id;
+PREPARE fts_threshold FROM 'SELECT id FROM docs WHERE MATCH(en) AGAINST(?) > ? ORDER BY id';
+SET @query='database audit', @threshold=0;
+EXECUTE fts_threshold USING @query, @threshold;
+SET @threshold=0.5;
+EXECUTE fts_threshold USING @query, @threshold;
+SET @threshold=0;
+EXECUTE fts_threshold USING @query, @threshold;
+DEALLOCATE PREPARE fts_threshold;
+# A long query exercises the term-at-a-time iterator as well.
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit unmatchedaa unmatchedab unmatchedac unmatchedad unmatchedae unmatchedaf unmatchedag unmatchedah unmatchedai unmatchedaj unmatchedak unmatchedal unmatchedam unmatchedan unmatchedao unmatchedap unmatchedaq unmatchedar unmatchedas unmatchedat unmatchedau unmatchedav unmatchedaw unmatchedax unmatcheday unmatchedaz unmatchedba unmatchedbb unmatchedbc unmatchedbd unmatchedbe unmatchedbf unmatchedbg unmatchedbh unmatchedbi unmatchedbj unmatchedbk unmatchedbl unmatchedbm unmatchedbn unmatchedbo unmatchedbp unmatchedbq unmatchedbr unmatchedbs unmatchedbt unmatchedbu unmatchedbv unmatchedbw unmatchedbx unmatchedby unmatchedbz unmatchedca unmatchedcb unmatchedcc unmatchedcd unmatchedce unmatchedcf unmatchedcg unmatchedch unmatchedci unmatchedcj unmatchedck unmatchedcl unmatchedcm unmatchedcn unmatchedco unmatchedcp unmatchedcq unmatchedcr unmatchedcs unmatchedct unmatchedcu unmatchedcv unmatchedcw unmatchedcx unmatchedcy unmatchedcz unmatchedda unmatcheddb unmatcheddc unmatcheddd unmatchedde unmatcheddf unmatcheddg unmatcheddh unmatcheddi unmatcheddj unmatcheddk unmatcheddl unmatcheddm unmatcheddn unmatcheddo unmatcheddp unmatcheddq unmatcheddr unmatchedds unmatcheddt unmatcheddu unmatcheddv unmatcheddw unmatcheddx unmatcheddy unmatcheddz unmatchedea unmatchedeb unmatchedec unmatcheded unmatchedee unmatchedef unmatchedeg unmatchedeh unmatchedei unmatchedej unmatchedek unmatchedel unmatchedem unmatcheden unmatchedeo unmatchedep unmatchedeq unmatcheder unmatchedes unmatchedet unmatchedeu unmatchedev unmatchedew unmatchedex unmatchedey unmatchedez unmatchedfa unmatchedfb unmatchedfc unmatchedfd unmatchedfe unmatchedff unmatchedfg unmatchedfh unmatchedfi unmatchedfj unmatchedfk unmatchedfl unmatchedfm unmatchedfn unmatchedfo unmatchedfp unmatchedfq unmatchedfr unmatchedfs unmatchedft unmatchedfu unmatchedfv unmatchedfw unmatchedfx unmatchedfy unmatchedfz unmatchedga unmatchedgb unmatchedgc unmatchedgd unmatchedge unmatchedgf unmatchedgg unmatchedgh unmatchedgi unmatchedgj unmatchedgk unmatchedgl unmatchedgm unmatchedgn unmatchedgo unmatchedgp unmatchedgq unmatchedgr unmatchedgs unmatchedgt unmatchedgu unmatchedgv unmatchedgw unmatchedgx unmatchedgy unmatchedgz unmatchedha unmatchedhb unmatchedhc unmatchedhd unmatchedhe unmatchedhf unmatchedhg unmatchedhh unmatchedhi unmatchedhj unmatchedhk unmatchedhl unmatchedhm unmatchedhn unmatchedho unmatchedhp unmatchedhq unmatchedhr unmatchedhs unmatchedht unmatchedhu unmatchedhv unmatchedhw unmatchedhx unmatchedhy unmatchedhz unmatchedia unmatchedib unmatchedic unmatchedid unmatchedie unmatchedif unmatchedig unmatchedih unmatchedii unmatchedij unmatchedik unmatchedil unmatchedim unmatchedin unmatchedio unmatchedip unmatchediq unmatchedir unmatchedis unmatchedit unmatchediu unmatchediv unmatchediw unmatchedix unmatchediy unmatchediz unmatchedja unmatchedjb unmatchedjc unmatchedjd unmatchedje unmatchedjf unmatchedjg unmatchedjh unmatchedji unmatchedjj unmatchedjk unmatchedjl unmatchedjm unmatchedjn unmatchedjo unmatchedjp unmatchedjq unmatchedjr unmatchedjs unmatchedjt unmatchedju unmatchedjv unmatchedjw unmatchedjx unmatchedjy unmatchedjz unmatchedka unmatchedkb unmatchedkc unmatchedkd unmatchedke unmatchedkf unmatchedkg unmatchedkh unmatchedki unmatchedkj');
+SELECT id FROM (SELECT id, MATCH(en) AGAINST('database audit') AS score FROM docs) t WHERE score > 0 ORDER BY score DESC, id;
+--error ER_WRONG_ARGUMENTS
+SELECT d.id FROM docs d WHERE MATCH(d.en) AGAINST('database audit') AND EXISTS (SELECT 1 FROM docs x WHERE x.id=d.id AND MATCH(d.en) AGAINST('database audit') > 0.5) ORDER BY d.id;
+DELETE FROM docs WHERE id >= 6;
 UPDATE docs SET cn='全文索引 分词器', en='audit audit audit' WHERE id=2;
 DELETE FROM docs WHERE id=1;
 INSERT INTO docs VALUES (5, '数据库 全文索引', 'database database audit');

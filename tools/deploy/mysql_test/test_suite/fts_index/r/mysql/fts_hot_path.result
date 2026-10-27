@@ -88,6 +88,115 @@ SELECT id FROM docs WHERE MATCH(en) AGAINST('missingtoken') ORDER BY id;
 id
 SELECT id FROM docs WHERE MATCH(en) AGAINST('') ORDER BY id;
 id
+INSERT INTO docs VALUES (6, NULL, NULL), (7, '', ''), (8, '数据库', 'database');
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit');
+COUNT(*)
+4
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') > 0 ORDER BY id;
+id
+1
+2
+3
+8
+SELECT id FROM docs WHERE 0 < MATCH(en) AGAINST('database audit') ORDER BY id;
+id
+1
+2
+3
+8
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') AND id > 1 ORDER BY id;
+id
+2
+3
+8
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') OR id=4 ORDER BY id;
+id
+1
+2
+3
+4
+8
+SELECT id FROM docs WHERE NOT MATCH(en) AGAINST('database audit') ORDER BY id;
+id
+4
+6
+7
+SELECT id, ROUND(MATCH(en) AGAINST('database audit'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY score DESC, id;
+id	score
+1	1.46065157
+3	1.04494349
+8	0.39776384
+2	0.35216035
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY MATCH(en) AGAINST('database audit') DESC, id;
+id
+1
+3
+8
+2
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') > 0.5 ORDER BY id;
+id
+1
+3
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') = 1 ORDER BY id;
+id
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') <= 0 ORDER BY id;
+id
+4
+6
+7
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') IS NULL ORDER BY id;
+id
+SELECT id, MATCH(en) AGAINST('database audit') > 0 AS hit FROM docs ORDER BY id;
+id	hit
+1	1
+2	1
+3	1
+4	0
+6	0
+7	0
+8	1
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') LIMIT 2 OFFSET 1) t;
+COUNT(*)
+2
+SELECT id FROM docs WHERE MATCH(en) AGAINST('+database -audit' IN BOOLEAN MODE) ORDER BY id;
+id
+2
+8
+SELECT id FROM docs WHERE MATCH(en) AGAINST('database ~audit' IN BOOLEAN MODE) ORDER BY id;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your OceanBase version for the right syntax to use
+PREPARE fts_threshold FROM 'SELECT id FROM docs WHERE MATCH(en) AGAINST(?) > ? ORDER BY id';
+SET @query='database audit', @threshold=0;
+EXECUTE fts_threshold USING @query, @threshold;
+id
+1
+2
+3
+8
+SET @threshold=0.5;
+EXECUTE fts_threshold USING @query, @threshold;
+id
+1
+3
+SET @threshold=0;
+EXECUTE fts_threshold USING @query, @threshold;
+id
+1
+2
+3
+8
+DEALLOCATE PREPARE fts_threshold;
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit unmatchedaa unmatchedab unmatchedac unmatchedad unmatchedae unmatchedaf unmatchedag unmatchedah unmatchedai unmatchedaj unmatchedak unmatchedal unmatchedam unmatchedan unmatchedao unmatchedap unmatchedaq unmatchedar unmatchedas unmatchedat unmatchedau unmatchedav unmatchedaw unmatchedax unmatcheday unmatchedaz unmatchedba unmatchedbb unmatchedbc unmatchedbd unmatchedbe unmatchedbf unmatchedbg unmatchedbh unmatchedbi unmatchedbj unmatchedbk unmatchedbl unmatchedbm unmatchedbn unmatchedbo unmatchedbp unmatchedbq unmatchedbr unmatchedbs unmatchedbt unmatchedbu unmatchedbv unmatchedbw unmatchedbx unmatchedby unmatchedbz unmatchedca unmatchedcb unmatchedcc unmatchedcd unmatchedce unmatchedcf unmatchedcg unmatchedch unmatchedci unmatchedcj unmatchedck unmatchedcl unmatchedcm unmatchedcn unmatchedco unmatchedcp unmatchedcq unmatchedcr unmatchedcs unmatchedct unmatchedcu unmatchedcv unmatchedcw unmatchedcx unmatchedcy unmatchedcz unmatchedda unmatcheddb unmatcheddc unmatcheddd unmatchedde unmatcheddf unmatcheddg unmatcheddh unmatcheddi unmatcheddj unmatcheddk unmatcheddl unmatcheddm unmatcheddn unmatcheddo unmatcheddp unmatcheddq unmatcheddr unmatchedds unmatcheddt unmatcheddu unmatcheddv unmatcheddw unmatcheddx unmatcheddy unmatcheddz unmatchedea unmatchedeb unmatchedec unmatcheded unmatchedee unmatchedef unmatchedeg unmatchedeh unmatchedei unmatchedej unmatchedek unmatchedel unmatchedem unmatcheden unmatchedeo unmatchedep unmatchedeq unmatcheder unmatchedes unmatchedet unmatchedeu unmatchedev unmatchedew unmatchedex unmatchedey unmatchedez unmatchedfa unmatchedfb unmatchedfc unmatchedfd unmatchedfe unmatchedff unmatchedfg unmatchedfh unmatchedfi unmatchedfj unmatchedfk unmatchedfl unmatchedfm unmatchedfn unmatchedfo unmatchedfp unmatchedfq unmatchedfr unmatchedfs unmatchedft unmatchedfu unmatchedfv unmatchedfw unmatchedfx unmatchedfy unmatchedfz unmatchedga unmatchedgb unmatchedgc unmatchedgd unmatchedge unmatchedgf unmatchedgg unmatchedgh unmatchedgi unmatchedgj unmatchedgk unmatchedgl unmatchedgm unmatchedgn unmatchedgo unmatchedgp unmatchedgq unmatchedgr unmatchedgs unmatchedgt unmatchedgu unmatchedgv unmatchedgw unmatchedgx unmatchedgy unmatchedgz unmatchedha unmatchedhb unmatchedhc unmatchedhd unmatchedhe unmatchedhf unmatchedhg unmatchedhh unmatchedhi unmatchedhj unmatchedhk unmatchedhl unmatchedhm unmatchedhn unmatchedho unmatchedhp unmatchedhq unmatchedhr unmatchedhs unmatchedht unmatchedhu unmatchedhv unmatchedhw unmatchedhx unmatchedhy unmatchedhz unmatchedia unmatchedib unmatchedic unmatchedid unmatchedie unmatchedif unmatchedig unmatchedih unmatchedii unmatchedij unmatchedik unmatchedil unmatchedim unmatchedin unmatchedio unmatchedip unmatchediq unmatchedir unmatchedis unmatchedit unmatchediu unmatchediv unmatchediw unmatchedix unmatchediy unmatchediz unmatchedja unmatchedjb unmatchedjc unmatchedjd unmatchedje unmatchedjf unmatchedjg unmatchedjh unmatchedji unmatchedjj unmatchedjk unmatchedjl unmatchedjm unmatchedjn unmatchedjo unmatchedjp unmatchedjq unmatchedjr unmatchedjs unmatchedjt unmatchedju unmatchedjv unmatchedjw unmatchedjx unmatchedjy unmatchedjz unmatchedka unmatchedkb unmatchedkc unmatchedkd unmatchedke unmatchedkf unmatchedkg unmatchedkh unmatchedki unmatchedkj');
+COUNT(*)
+4
+SELECT id FROM (SELECT id, MATCH(en) AGAINST('database audit') AS score FROM docs) t WHERE score > 0 ORDER BY score DESC, id;
+id
+1
+3
+8
+2
+SELECT d.id FROM docs d WHERE MATCH(d.en) AGAINST('database audit') AND EXISTS (SELECT 1 FROM docs x WHERE x.id=d.id AND MATCH(d.en) AGAINST('database audit') > 0.5) ORDER BY d.id;
+ERROR HY000: Incorrect arguments to match against column
+DELETE FROM docs WHERE id >= 6;
 UPDATE docs SET cn='全文索引 分词器', en='audit audit audit' WHERE id=2;
 DELETE FROM docs WHERE id=1;
 INSERT INTO docs VALUES (5, '数据库 全文索引', 'database database audit');

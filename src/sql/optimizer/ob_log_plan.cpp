@@ -11987,6 +11987,91 @@ int ObLogPlan::construct_startup_filter_for_limit(ObRawExpr *limit_expr, ObLogic
   return ret;
 }
 
+static int check_match_score_use(ObExecContext *exec_ctx,
+                                 ObRawExpr *expr,
+                                 ObRawExpr *match_expr,
+                                 bool &need_calc,
+                                 ObIArray<ObExprConstraint> &constraints)
+{
+  int ret = OB_SUCCESS;
+  need_calc = false;
+  bool need_check_child = true;
+  if (OB_ISNULL(expr) || OB_ISNULL(match_expr)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (expr == match_expr) {
+    need_calc = true;
+    need_check_child = false;
+  } else if (expr->get_expr_type() == T_OP_GT || expr->get_expr_type() == T_OP_LT) {
+    ObRawExpr *gt_param = NULL;
+    ObRawExpr *lt_param = NULL;
+    bool is_param_zero = false;
+    if (expr->get_param_count() != 2 || OB_ISNULL(expr->get_param_expr(0)) ||
+        OB_ISNULL(expr->get_param_expr(1))) {
+      ret = OB_INVALID_ARGUMENT;
+    } else if (OB_FALSE_IT(gt_param = expr->get_expr_type() == T_OP_GT ? expr->get_param_expr(0) :
+                                                          expr->get_param_expr(1))) {
+    } else if (OB_FALSE_IT(lt_param = expr->get_expr_type() == T_OP_GT ? expr->get_param_expr(1) :
+                                                          expr->get_param_expr(0))) {
+    } else if (gt_param != match_expr) {
+      /* do nothing */
+    } else if (OB_FAIL(ObTransformUtils::check_expr_eq_zero(exec_ctx, lt_param, is_param_zero, constraints))) {
+    } else if (is_param_zero) {
+      need_calc = false;
+      need_check_child = false;
+    }
+  } else if (expr->get_expr_type() == T_OP_BOOL) {
+    if (expr->get_param_count() == 1 && expr->get_param_expr(0) == match_expr) {
+      need_calc = false;
+      need_check_child = false;
+    }
+  }
+  if (OB_SUCC(ret) && need_check_child) {
+    for (int64_t i = 0; OB_SUCC(ret) && !need_calc && i < expr->get_param_count(); i++) {
+      bool tmp_need_calc = false;
+      if (OB_FAIL(SMART_CALL(check_match_score_use(exec_ctx,
+                                                  expr->get_param_expr(i),
+                                                  match_expr,
+                                                  tmp_need_calc,
+                                                  constraints)))) {
+      } else if (tmp_need_calc) {
+        need_calc = true;
+      }
+    }
+  }
+  return ret;
+}
+
+static int check_need_calc_match_score(ObExecContext *exec_ctx,
+                                      const ObDMLStmt *stmt,
+                                      ObMatchFunRawExpr *match_expr,
+                                      bool &need_calc,
+                                      ObIArray<ObExprConstraint> &constraints)
+{
+  int ret = OB_SUCCESS;
+  need_calc = true;
+  ObSEArray<ObRawExpr *, 16> exprs;
+  if (OB_ISNULL(stmt) || OB_ISNULL(match_expr)) {
+    ret = OB_INVALID_ARGUMENT;
+  } else if (!stmt->is_select_stmt() || !stmt->get_subquery_exprs().empty()
+             || match_expr->is_es_match()
+             || match_expr->get_mode_flag() != NATURAL_LANGUAGE_MODE
+             || !match_expr->get_columns_boosts().empty()) {
+    // Boolean operators and boosts can change the sign of a matching score.
+    // Keep scoring for these cases, and for correlated subquery consumers.
+  } else if (OB_FAIL(stmt->get_relation_exprs(exprs))) {
+  } else {
+    // Relation expressions include SELECT, ORDER BY, HAVING, and predicates,
+    // but exclude the dictionary of MATCH nodes, which is not a score use.
+    need_calc = false;
+    for (int64_t i = 0; OB_SUCC(ret) && !need_calc && i < exprs.count(); ++i) {
+      if (OB_FAIL(check_match_score_use(exec_ctx, exprs.at(i),
+                                            match_expr, need_calc, constraints))) {
+      }
+    }
+  }
+  return ret;
+}
+
 int ObLogPlan::prepare_text_retrieval_scan(const ObIArray<ObRawExpr *> &scan_match_exprs,
                                            const ObIArray<ObRawExpr *> &scan_match_filters,
                                            const ObIArray<ObRawExpr *> &all_match_filters,
@@ -12046,6 +12131,20 @@ int ObLogPlan::prepare_text_retrieval_scan(const ObIArray<ObRawExpr *> &scan_mat
     }
     if (OB_FAIL(table_scan->set_is_skip_rowkey_doc(tr_info.doc_id_idx_tid_ == OB_INVALID_ID))) {
     } else if (OB_FAIL(table_scan->set_is_skip_rowkey_doc(tr_info.rowkey_idx_tid_ == OB_INVALID_ID))) {
+    }
+    // Index-back lookup can also consume projected index values while applying
+    // data-table filters. Keep its existing score/projection contract.
+    if (OB_SUCC(ret) && !table_scan->get_index_back()) {
+      ObSEArray<ObExprConstraint, 2> constraints;
+      if (OB_FAIL(check_need_calc_match_score(get_optimizer_context().get_exec_ctx(),
+                                            get_stmt(), match_against,
+                                            tr_info.need_calc_relevance_, constraints))) {
+        LOG_WARN("failed to check need calc relevance", K(ret));
+      } else if (!tr_info.need_calc_relevance_ &&
+                 OB_FAIL(append_array_no_dup(get_optimizer_context().get_query_ctx()->all_expr_constraints_,
+                                            constraints))) {
+        LOG_WARN("failed to append array no dup", K(ret));
+      }
     }
   }
 
