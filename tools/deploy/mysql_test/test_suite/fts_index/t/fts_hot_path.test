@@ -22,6 +22,15 @@ SELECT tokenize(_utf8mb4'café cafe CAFÉ' COLLATE utf8mb4_bin, 'space', '[{"out
 SELECT tokenize('', 'ik', '[{"output":"all"}]') AS tokens;
 SELECT tokenize(NULL, 'beng', '[{"output":"all"}]') AS tokens;
 SELECT tokenize('   ，。！？', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('lowercase 1234 MixedCase CAFÉ café a-b a_b', 'beng', '[{"output":"all"}]') AS tokens;
+--error ER_WRONG_PARAMETERS_TO_NATIVE_FCT
+SELECT tokenize(_latin1'THE the database DATABASE', 'beng', '[{"output":"all"}]') AS tokens;
+--error ER_WRONG_PARAMETERS_TO_NATIVE_FCT
+SELECT tokenize(_latin1'the and database DATABASE', 'space', '[{"output":"all"}]') AS tokens;
+# More than sixteen disjoint chains exercises the arbitrator array spill.
+SELECT SHA2(CAST(tokenize(REPEAT('数据库 OceanBase 全文索引 123 ', 10), 'ik', '[{"output":"all"}]') AS CHAR), 256) AS tokens_digest;
+SELECT SHA2(CAST(tokenize(REPEAT('中华人民共和国人民大会堂 ', 10), 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]') AS CHAR), 256) AS tokens_digest;
+SELECT SHA2(CAST(tokenize(REPEAT('中华人民共和国人民大会堂 ', 10), 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]') AS CHAR), 256) AS tokens_digest;
 SELECT tokenize('hello hello world', 'ngram', '[{"output":"all"}]') AS tokens;
 SELECT tokenize('一二三四 一二三四', 'ngram2', '[{"output":"all"},{"additional_args":[{"min_ngram_size":2},{"max_ngram_size":4}]}]') AS tokens;
 

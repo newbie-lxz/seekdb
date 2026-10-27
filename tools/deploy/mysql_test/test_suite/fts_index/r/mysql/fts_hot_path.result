@@ -42,6 +42,22 @@ tokens
 SELECT tokenize('   ，。！？', 'ik', '[{"output":"all"}]') AS tokens;
 tokens
 {"tokens": [], "doc_len": 0}
+SELECT tokenize('lowercase 1234 MixedCase CAFÉ café a-b a_b', 'beng', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"café": 2}, {"lowercase": 1}, {"1234": 1}, {"mixedcase": 1}], "doc_len": 5}
+SELECT tokenize(_latin1'THE the database DATABASE', 'beng', '[{"output":"all"}]') AS tokens;
+ERROR 42000: Incorrect parameters in the call to native function 'tokenize'
+SELECT tokenize(_latin1'the and database DATABASE', 'space', '[{"output":"all"}]') AS tokens;
+ERROR 42000: Incorrect parameters in the call to native function 'tokenize'
+SELECT SHA2(CAST(tokenize(REPEAT('数据库 OceanBase 全文索引 123 ', 10), 'ik', '[{"output":"all"}]') AS CHAR), 256) AS tokens_digest;
+tokens_digest
+3f01efc84067384c802720b08d086b471f341608c136807cf9f7d2a83f2dc973
+SELECT SHA2(CAST(tokenize(REPEAT('中华人民共和国人民大会堂 ', 10), 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]') AS CHAR), 256) AS tokens_digest;
+tokens_digest
+658dc83e27f8d06947c720e78975bdff1c6e8ded9c26d18738161b95989ebdc1
+SELECT SHA2(CAST(tokenize(REPEAT('中华人民共和国人民大会堂 ', 10), 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]') AS CHAR), 256) AS tokens_digest;
+tokens_digest
+da16bf3a54e031e06682066d05fc123ac0a24a60eca6e32c1709dd95c99e71d8
 SELECT tokenize('hello hello world', 'ngram', '[{"output":"all"}]') AS tokens;
 tokens
 {"tokens": [{"lo": 2}, {"he": 2}, {"ll": 2}, {"or": 1}, {"rl": 1}, {"wo": 1}, {"ld": 1}, {"el": 2}], "doc_len": 12}

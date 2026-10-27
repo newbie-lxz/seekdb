@@ -295,7 +295,16 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
     } else {
       ObString norm_alnum_token(norm_token_len, norm_token_ptr);
       ObString norm_lower_token;
-      if (OB_FAIL(ObCharset::tolower(cs_, norm_alnum_token, norm_lower_token, norm_allocator_))) {
+      // ASCII lowercase bytes are unchanged by UTF8MB4 case conversion. Keep
+      // the input view until the next get_next(), as for any stream token.
+      bool already_lower = (0 == STRCMP(cs_->csname, "utf8mb4"));
+      for (uint32_t i = 0; already_lower && i < norm_token_len; ++i) {
+        const unsigned char ch = static_cast<unsigned char>(norm_token_ptr[i]);
+        already_lower = ch < 0x80 && !(ch >= 'A' && ch <= 'Z');
+      }
+      if (already_lower) {
+        next_token.set_string(norm_alnum_token);
+      } else if (OB_FAIL(ObCharset::tolower(cs_, norm_alnum_token, norm_lower_token, norm_allocator_))) {
       } else {
         next_token.set_string(norm_lower_token);
       }

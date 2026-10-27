@@ -82,7 +82,9 @@ public:
 
 private:
   static const int64_t DEFAULT_STOPWORD_BUCKET_NUM = 37L;
-  typedef common::hash::ObHashSet<storage::ObFTWord> StopWordSet;
+  // Populated before publication by ObFTParseData::init_global(), then read
+  // only until global teardown after request workers stop.
+  typedef common::hash::ObHashSet<storage::ObFTWord, common::hash::NoPthreadDefendMode> StopWordSet;
 
   StopWordSet stopword_set_;
   ObObjMeta stopword_type_;

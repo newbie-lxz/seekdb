@@ -382,14 +382,22 @@ int ObFTRangeDict::find_first_char_range(const ObString &single_word, ObIFTDict 
 {
   int ret = OB_SUCCESS;
   bool found = false;
+  const auto *bytes = reinterpret_cast<const unsigned char *>(single_word.ptr());
+  const bool byte_ordered = (single_word.length() == 1 && bytes[0] < 0x80)
+      || (single_word.length() == 3 && bytes[0] >= 0xe0 && bytes[0] <= 0xef
+          && (bytes[1] & 0xc0) == 0x80 && (bytes[2] & 0xc0) == 0x80
+          && (bytes[0] != 0xe0 || bytes[1] >= 0xa0)
+          && (bytes[0] != 0xed || bytes[1] < 0xa0));
+  const auto compare = [byte_ordered, &single_word](const ObFTSingleWord &endpoint) {
+    return byte_ordered ? endpoint.get_word().compare(single_word)
+        : ObCharset::strcmp(CS_TYPE_UTF8MB4_BIN, endpoint.get_word(), single_word);
+  };
   for (int i = 0; OB_SUCC(ret) && !found && i < range_dicts_.size(); ++i) {
-    if (ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
-                          range_dicts_[i].start_.get_word(),
-                          single_word)
+    // Complete UTF8MB4 characters have byte order equal to binary collation
+    // order. Preserve the charset comparison for other input representations.
+    if (compare(range_dicts_[i].start_)
             <= 0
-        && ObCharset::strcmp(ObCollationType::CS_TYPE_UTF8MB4_BIN,
-                             range_dicts_[i].end_.get_word(),
-                             single_word)
+        && compare(range_dicts_[i].end_)
                >= 0) {
       dict = range_dicts_[i].dict_;
       found = true;

@@ -51,7 +51,9 @@ private:
   ObObjMeta meta_;
 };
 
-typedef common::hash::ObHashMap<ObFTWord, int64_t> ObFTWordMap;
+// Each map belongs to one synchronous document parse, including DAS row
+// expansion. Parallel scans construct independent maps for their own rows.
+typedef common::hash::ObHashMap<ObFTWord, int64_t, common::hash::NoPthreadDefendMode> ObFTWordMap;
 
 class ObAddWordFlag final
 {

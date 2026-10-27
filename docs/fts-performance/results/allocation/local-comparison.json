@@ -1,0 +1,76 @@
+{
+  "score": 15.295926969434474,
+  "mean_improvement": 0.07647963484717236,
+  "full_score_improvement": 0.5,
+  "categories": {
+    "build": {
+      "improvement": 0.09873779026754334,
+      "metrics": [
+        {
+          "metric": "build_ik_all_sec",
+          "baseline": 17.925,
+          "current": 16.304,
+          "improvement": 0.09043235704323582
+        },
+        {
+          "metric": "build_ik_content_sec",
+          "baseline": 14.569,
+          "current": 12.807,
+          "improvement": 0.12094172558171462
+        },
+        {
+          "metric": "build_beng_en_sec",
+          "baseline": 7.249,
+          "current": 6.634,
+          "improvement": 0.08483928817767959
+        }
+      ]
+    },
+    "tokenize": {
+      "improvement": 0.029046026959609325,
+      "metrics": [
+        {
+          "metric": "tokenize_ik_avg_ms",
+          "baseline": 0.9449,
+          "current": 0.8825,
+          "improvement": 0.0660387342575934
+        },
+        {
+          "metric": "tokenize_beng_avg_ms",
+          "baseline": 0.7802,
+          "current": 0.7864,
+          "improvement": -0.007946680338374755
+        }
+      ]
+    },
+    "query": {
+      "improvement": 0.10165508731436441,
+      "metrics": [
+        {
+          "metric": "query_cn_avg_ms",
+          "baseline": 5.153,
+          "current": 4.552,
+          "improvement": 0.11663108868620221
+        },
+        {
+          "metric": "query_beng_avg_ms",
+          "baseline": 6.9735,
+          "current": 6.1858,
+          "improvement": 0.11295619129561901
+        },
+        {
+          "metric": "query_mixed_avg_ms",
+          "baseline": 5.6181,
+          "current": 4.8502,
+          "improvement": 0.13668322030579733
+        },
+        {
+          "metric": "query_limit_avg_ms",
+          "baseline": 6.6543,
+          "current": 6.3858,
+          "improvement": 0.04034984896983911
+        }
+      ]
+    }
+  }
+}
