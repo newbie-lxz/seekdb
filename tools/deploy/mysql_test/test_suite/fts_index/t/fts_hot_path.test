@@ -1,0 +1,55 @@
+# owner: newbie-lxz
+# description: Preserve IK classification and shared token frequency aggregation.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_hot_path;
+--enable_warnings
+CREATE DATABASE fts_hot_path;
+USE fts_hot_path;
+SET NAMES utf8mb4;
+SET ob_query_timeout = 10000000000;
+
+# Full output checks both word frequencies and document length.
+SELECT tokenize('Database DATABASE database audit audit', 'space', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('Database DATABASE database audit audit', 'beng', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('数据库 数据库 全文索引 OceanBase OCEANBASE 123 １２３ ＡＢＣ abc', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('中华人民共和国人民大会堂', 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]') AS tokens;
+SELECT tokenize('中华人民共和国人民大会堂', 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]') AS tokens;
+SELECT tokenize('中文 かな カナ 한글 😀 𠀀 ，。！？ A1.2-test@example.com', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT tokenize(CONCAT('hello', CHAR(0), 'world', CHAR(9), 'database'), 'beng', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('the and database database', 'space', '[{"output":"all"}]') AS tokens;
+SELECT tokenize(_utf8mb4'café cafe CAFÉ' COLLATE utf8mb4_general_ci, 'space', '[{"output":"all"}]') AS tokens;
+SELECT tokenize(_utf8mb4'café cafe CAFÉ' COLLATE utf8mb4_bin, 'space', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT tokenize(NULL, 'beng', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('   ，。！？', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('hello hello world', 'ngram', '[{"output":"all"}]') AS tokens;
+SELECT tokenize('一二三四 一二三四', 'ngram2', '[{"output":"all"},{"additional_args":[{"min_ngram_size":2},{"max_ngram_size":4}]}]') AS tokens;
+
+CREATE TABLE docs (
+  id INT PRIMARY KEY,
+  cn TEXT,
+  en TEXT,
+  FULLTEXT INDEX cn_idx(cn) WITH PARSER ik,
+  FULLTEXT INDEX en_idx(en) WITH PARSER beng
+) DEFAULT CHARSET=utf8mb4;
+INSERT INTO docs VALUES
+  (1, '数据库 数据库 全文索引', 'Database database performance audit'),
+  (2, '数据库 查询 优化', 'database query optimization'),
+  (3, '全文索引 分词器', 'full text indexing audit'),
+  (4, '没有匹配的文档', 'unrelated document');
+# Verify document identity and relevance, including repeated terms.
+SELECT id, ROUND(MATCH(cn) AGAINST('数据库'), 8) AS score FROM docs WHERE MATCH(cn) AGAINST('数据库') ORDER BY id;
+SELECT id, ROUND(MATCH(en) AGAINST('database audit'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(cn) AGAINST('全文索引 分词器') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('DATABASE') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('+database -audit' IN BOOLEAN MODE) ORDER BY id;
+SELECT id FROM docs WHERE MATCH(cn) AGAINST('数据库 数据库') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('missingtoken') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(en) AGAINST('') ORDER BY id;
+UPDATE docs SET cn='全文索引 分词器', en='audit audit audit' WHERE id=2;
+DELETE FROM docs WHERE id=1;
+INSERT INTO docs VALUES (5, '数据库 全文索引', 'database database audit');
+SELECT id, ROUND(MATCH(cn) AGAINST('数据库'), 8) AS score FROM docs WHERE MATCH(cn) AGAINST('数据库') ORDER BY id;
+SELECT id, ROUND(MATCH(en) AGAINST('database audit'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('database audit') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(cn) AGAINST('全文索引 分词器') ORDER BY id;
+DROP DATABASE fts_hot_path;
