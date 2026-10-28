@@ -162,6 +162,27 @@ id
 7
 SELECT id FROM docs WHERE MATCH(en) AGAINST('database audit') IS NULL ORDER BY id;
 id
+SELECT id, ROUND(MATCH(en) AGAINST('audit database performance'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('audit database performance') ORDER BY id;
+id	score
+1	1.86778401
+2	0.35031847
+3	0.33132530
+8	0.39568345
+SELECT id, ROUND(MATCH(en) AGAINST('database performance audit'), 8) AS score FROM docs WHERE MATCH(en) AGAINST('database performance audit') ORDER BY id;
+id	score
+1	1.86778401
+2	0.35031847
+3	0.33132530
+8	0.39568345
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database missingtoken');
+COUNT(*)
+3
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit missingtoken');
+COUNT(*)
+4
+SELECT COUNT(*) FROM docs WHERE MATCH(en) AGAINST('database audit performance missingtoken');
+COUNT(*)
+4
 SELECT id, MATCH(en) AGAINST('database audit') > 0 AS hit FROM docs ORDER BY id;
 id	hit
 1	1

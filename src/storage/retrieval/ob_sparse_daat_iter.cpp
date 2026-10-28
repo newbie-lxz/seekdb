@@ -26,7 +26,8 @@ namespace storage
 ObSRMergeCmp::ObSRMergeCmp()
   : cmp_func_(nullptr),
     iter_ids_(nullptr),
-    is_inited_(false)
+    is_inited_(false),
+    binary_id_(false)
 {
 }
 
@@ -39,6 +40,7 @@ int ObSRMergeCmp::init(
     ret = OB_ERR_UNEXPECTED;
   } else {
     iter_ids_ = iter_ids;
+    binary_id_ = id_meta.type_ == ObVarcharType && id_meta.cs_type_ == CS_TYPE_BINARY;
     common::ObDatumBasicFuncs *basic_funcs = ObDatumFuncs::get_basic_func(id_meta.type_, id_meta.cs_type_);
     cmp_func_ = basic_funcs->null_first_cmp_;
     if (OB_ISNULL(cmp_func_)) {
@@ -60,8 +62,18 @@ int ObSRMergeCmp::cmp(
     ret = OB_NOT_INIT;
   } else {
     int tmp_ret = 0;
-    if (OB_FAIL(cmp_func_(
-            get_id_datum(l.iter_idx_), get_id_datum(r.iter_idx_), tmp_ret, nullptr))) {
+    const ObDatum &left = get_id_datum(l.iter_idx_);
+    const ObDatum &right = get_id_datum(r.iter_idx_);
+    if (binary_id_ && !left.is_null() && !right.is_null()) {
+      // The binary charset compares bytes and then length; it does not ignore
+      // trailing spaces. Avoid charset dispatch/validation for each merge head.
+      const int64_t min_len = MIN(left.len_, right.len_);
+      tmp_ret = min_len == 0 ? 0 : MEMCMP(left.ptr_, right.ptr_, min_len);
+      if (tmp_ret == 0) {
+        tmp_ret = left.len_ == right.len_ ? 0 : (left.len_ < right.len_ ? -1 : 1);
+      }
+      cmp_ret = tmp_ret;
+    } else if (OB_FAIL(cmp_func_(left, right, tmp_ret, nullptr))) {
     } else {
       cmp_ret = tmp_ret;
     }
@@ -418,22 +430,30 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
 
   if (eval_ctx->is_vectorized()) {
     sql::ObBitVector &id_evaluated_flags = id_proj_expr->get_evaluated_flags(*eval_ctx);
+    const ObDocIdExt *ids = buffered_domain_ids_.get_data();
     for (int64_t i = 0; i < count; ++i) {
       guard.set_batch_idx(i);
       ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
-      set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
-      id_evaluated_flags.set(i);
-      id_proj_expr->set_evaluated_projected(*eval_ctx);
+      set_datum_func_(id_proj_datum, ids[i]);
     }
+    id_evaluated_flags.set_all(count);
+    id_proj_expr->set_evaluated_projected(*eval_ctx);
     if (iter_param_->need_project_relevance()) {
       sql::ObBitVector &relevance_evaluated_flags = relevance_proj_expr->get_evaluated_flags(*eval_ctx);
-      for (int64_t i = 0; i < count; ++i) {
-        guard.set_batch_idx(i);
-        ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
-        relevance_proj_datum.set_double(buffered_relevances_[i]);
-        relevance_evaluated_flags.set(i);
-        relevance_proj_expr->set_evaluated_projected(*eval_ctx);
+      const double *relevances = buffered_relevances_.get_data();
+      if (relevance_proj_expr->is_batch_result()) {
+        ObDatum *datums = relevance_proj_expr->locate_datums_for_update(*eval_ctx, count);
+        for (int64_t i = 0; i < count; ++i) {
+          datums[i].set_double(relevances[i]);
+        }
+      } else {
+        for (int64_t i = 0; i < count; ++i) {
+          guard.set_batch_idx(i);
+          relevance_proj_expr->locate_datum_for_write(*eval_ctx).set_double(relevances[i]);
+        }
       }
+      relevance_evaluated_flags.set_all(count);
+      relevance_proj_expr->set_evaluated_projected(*eval_ctx);
     }
   } else if (OB_UNLIKELY(1 != count)) {
     ret = OB_ERR_UNEXPECTED;

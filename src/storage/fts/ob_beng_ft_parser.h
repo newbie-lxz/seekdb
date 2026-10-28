@@ -38,6 +38,8 @@ public:
       analysis_ctx_(),
       english_analyzer_(),
       doc_(),
+      owned_ascii_doc_(nullptr),
+      ascii_pos_(0),
       token_stream_(nullptr),
       is_inited_(false)
   {}
@@ -53,6 +55,7 @@ public:
 
   VIRTUAL_TO_STRING_KV(K_(analysis_ctx), K_(english_analyzer), KP_(token_stream), K_(is_inited));
 private:
+  int get_next_ascii_token(const char *&word, int64_t &word_len);
   int segment(
       const common::ObDatum &doc,
       share::ObITokenStream *&token_stream);
@@ -61,6 +64,10 @@ private:
   share::ObTextAnalysisCtx analysis_ctx_;
   share::ObEnglishTextAnalyzer english_analyzer_;
   common::ObDatum doc_;
+  // Allocated in the caller's arena, like the returned token copies. It stays
+  // valid after this iterator is destroyed and the word map is consumed.
+  char *owned_ascii_doc_;
+  int64_t ascii_pos_;
   share::ObITokenStream *token_stream_;
   bool is_inited_;
 

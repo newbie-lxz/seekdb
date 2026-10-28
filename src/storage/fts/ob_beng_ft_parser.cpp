@@ -42,6 +42,12 @@ int ObBEngFTParser::get_next_token(
   word_freq = 0;
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
+  } else if (owned_ascii_doc_ != nullptr) {
+    if (OB_FAIL(get_next_ascii_token(word, word_len))) {
+    } else {
+      char_len = word_len;
+      word_freq = 1;
+    }
   } else if (OB_ISNULL(token_stream_)) {
     ret = OB_ERR_UNEXPECTED;
   } else if (OB_FAIL(token_stream_->get_next(token, token_freq))) {
@@ -62,6 +68,36 @@ int ObBEngFTParser::get_next_token(
   return ret;
 }
 
+int ObBEngFTParser::get_next_ascii_token(const char *&word, int64_t &word_len)
+{
+  const auto *ctype = analysis_ctx_.cs_->ctype;
+  const auto is_delimiter = [ctype](unsigned char ch) {
+    return (ctype[ch + 1] & (_MY_SPC | _MY_CTR | _MY_PNT)) != 0;
+  };
+  const auto is_alnum = [ctype](unsigned char ch) {
+    return (ctype[ch + 1] & (_MY_U | _MY_L | _MY_NMR)) != 0;
+  };
+  while (ascii_pos_ < doc_.len_) {
+    while (ascii_pos_ < doc_.len_ && is_delimiter(owned_ascii_doc_[ascii_pos_])) {
+      ++ascii_pos_;
+    }
+    int64_t start = ascii_pos_;
+    while (ascii_pos_ < doc_.len_ && !is_delimiter(owned_ascii_doc_[ascii_pos_])) {
+      ++ascii_pos_;
+    }
+    int64_t end = ascii_pos_;
+    // Preserve the whitespace tokenizer followed by the normalizer's trimming.
+    while (start < end && !is_alnum(owned_ascii_doc_[start])) { ++start; }
+    while (start < end && !is_alnum(owned_ascii_doc_[end - 1])) { --end; }
+    if (start < end) {
+      word = owned_ascii_doc_ + start;
+      word_len = end - start;
+      return OB_SUCCESS;
+    }
+  }
+  return OB_ITER_END;
+}
+
 int ObBEngFTParser::init(ObFTParserParam *param)
 {
   int ret = OB_SUCCESS;
@@ -73,10 +109,38 @@ int ObBEngFTParser::init(ObFTParserParam *param)
     ret = OB_NOT_SUPPORTED;
   } else {
     doc_.set_string(param->fulltext_, param->ft_length_);
+    // These UTF8 collations use ordinary ASCII case conversion. Convert a
+    // bounded short document once rather than allocating one lowercase buffer
+    // and one output buffer per word. Other encodings/collations and Unicode
+    // documents keep the analyzer's existing conversion path.
+    bool ascii_doc = param->ft_length_ <= 4096 && param->cs_->ctype != nullptr &&
+        (param->cs_->number == CS_TYPE_UTF8MB4_GENERAL_CI ||
+         param->cs_->number == CS_TYPE_UTF8MB4_BIN);
+    bool has_word = false;
+    for (int64_t i = 0; ascii_doc && i < param->ft_length_; ++i) {
+      const unsigned char ch = static_cast<unsigned char>(param->fulltext_[i]);
+      ascii_doc = ch < 0x80;
+      has_word |= (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+                  (ch >= '0' && ch <= '9');
+    }
+    if (ascii_doc && has_word) {
+      if (OB_ISNULL(owned_ascii_doc_ = static_cast<char *>(allocator_.alloc(param->ft_length_)))) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+      } else {
+        for (int64_t i = 0; i < param->ft_length_; ++i) {
+          const unsigned char ch = static_cast<unsigned char>(param->fulltext_[i]);
+          owned_ascii_doc_[i] = (ch >= 'A' && ch <= 'Z') ? ch + ('a' - 'A') : ch;
+        }
+        doc_.set_string(owned_ascii_doc_, param->ft_length_);
+      }
+    }
     analysis_ctx_.cs_ = param->cs_;
     analysis_ctx_.filter_stopword_ = false;
     analysis_ctx_.need_grouping_ = false;
-    if (OB_FAIL(english_analyzer_.init(analysis_ctx_, *param->allocator_))) {
+    if (OB_FAIL(ret)) {
+    } else if (owned_ascii_doc_ != nullptr) {
+      is_inited_ = true;
+    } else if (OB_FAIL(english_analyzer_.init(analysis_ctx_, *param->allocator_))) {
     } else if (OB_FAIL(segment(doc_, token_stream_))) {
     } else if (OB_ISNULL(token_stream_)) {
       ret = OB_ERR_UNEXPECTED;
@@ -109,6 +173,8 @@ void ObBEngFTParser::reset()
   analysis_ctx_.reset();
   english_analyzer_.reset();
   doc_.reset();
+  owned_ascii_doc_ = nullptr;
+  ascii_pos_ = 0;
   token_stream_ = nullptr;
   is_inited_ = false;
 }

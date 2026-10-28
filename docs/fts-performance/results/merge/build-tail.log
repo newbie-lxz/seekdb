@@ -1,0 +1,12 @@
+[100%] Linking CXX static library liboceanbase_static.a
+make[3]: 离开目录“/home/chenyiting/seekdb-src/build_release”
+[100%] Built target oceanbase_static
+make[3]: 进入目录“/home/chenyiting/seekdb-src/build_release”
+make[3]: 离开目录“/home/chenyiting/seekdb-src/build_release”
+make[3]: 进入目录“/home/chenyiting/seekdb-src/build_release”
+[100%] Linking CXX executable seekdb
+make[3]: 离开目录“/home/chenyiting/seekdb-src/build_release”
+[100%] Built target seekdb
+make[2]: 离开目录“/home/chenyiting/seekdb-src/build_release”
+make[1]: 离开目录“/home/chenyiting/seekdb-src/build_release”
+make: 离开目录“/home/chenyiting/seekdb-src/build_release”

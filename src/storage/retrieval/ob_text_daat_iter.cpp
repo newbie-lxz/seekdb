@@ -78,6 +78,85 @@ int ObTextDaaTIter::pre_process()
   return ret;
 }
 
+int ObTextDaaTIter::do_one_merge_round(int64_t &count)
+{
+  // With at most three posting lists, selecting their smallest heads directly
+  // avoids heap push/pop, item shifting and virtual merger calls for every hit.
+  // Larger queries keep the loser-tree implementation.
+  if (dim_iters_->count() > 3) {
+    return ObSRDaaTIterImpl::do_one_merge_round(count);
+  }
+  int ret = OB_SUCCESS;
+  const ObDatum **ids = iter_domain_ids_.get_data();
+  int64_t *next = next_round_iter_idxes_.get_data();
+  for (int64_t i = 0; OB_SUCC(ret) && i < next_round_cnt_; ++i) {
+    const int64_t idx = next[i];
+    auto *token_iter = static_cast<ObTextRetrievalDaaTTokenIter *>(dim_iters_->get_data()[idx]);
+    if (OB_ISNULL(token_iter)) {
+      ret = OB_ERR_UNEXPECTED;
+    } else if (OB_FAIL(token_iter->get_next_row())) {
+      if (ret == OB_ITER_END) {
+        ids[idx] = nullptr;
+        ret = OB_SUCCESS;
+      }
+    } else if (OB_FAIL(token_iter->get_curr_score(small_merge_scores_[idx]))) {
+    } else if (OB_NOT_NULL(iter_param_->dim_weights_) &&
+               FALSE_IT(small_merge_scores_[idx] = small_merge_scores_[idx] *
+                   iter_param_->field_boost_ * iter_param_->dim_weights_->at(idx))) {
+    } else if (OB_FAIL(token_iter->get_curr_id(ids[idx]))) {
+    }
+  }
+
+  int64_t smallest = -1;
+  ObSRMergeItem lhs;
+  ObSRMergeItem rhs;
+  for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
+    if (ids[i] != nullptr) {
+      int64_t cmp = 0;
+      lhs.iter_idx_ = i;
+      rhs.iter_idx_ = smallest;
+      if (smallest < 0) {
+        smallest = i;
+      } else if (OB_FAIL(merge_cmp_.cmp(lhs, rhs, cmp))) {
+      } else if (cmp < 0) {
+        smallest = i;
+      }
+    }
+  }
+
+  double relevance = 0.0;
+  bool need_project = false;
+  if (OB_SUCC(ret) && smallest < 0) {
+    ret = OB_ITER_END;
+  } else if (OB_SUCC(ret)) {
+    next_round_cnt_ = 0;
+    // Equal document IDs must be collected in increasing iterator order, just
+    // as in the simple merger, to preserve floating-point score accumulation.
+    for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
+      if (ids[i] != nullptr) {
+        int64_t cmp = 0;
+        lhs.iter_idx_ = i;
+        rhs.iter_idx_ = smallest;
+        if (i != smallest && OB_FAIL(merge_cmp_.cmp(lhs, rhs, cmp))) {
+        } else if (cmp == 0) {
+          if (OB_FAIL(relevance_collector_->collect_one_dim(i, small_merge_scores_[i]))) {
+          } else {
+            next[next_round_cnt_++] = i;
+          }
+        }
+      }
+    }
+    if (OB_FAIL(ret)) {
+    } else if (OB_FAIL(relevance_collector_->get_result(relevance, need_project))) {
+    } else if (need_project && OB_FAIL(process_collected_row(*ids[smallest], relevance))) {
+    } else if (need_project && iter_param_->need_filter() &&
+               OB_FAIL(filter_on_demand(count, relevance, need_project))) {
+    } else if (need_project && OB_FAIL(cache_result(count, *ids[smallest], relevance))) {
+    }
+  }
+  return ret;
+}
+
 ObTextBMWIter::ObTextBMWIter()
   : ObSRBMWIterImpl(),
     bm25_param_estimator_() {}
