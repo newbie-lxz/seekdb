@@ -51,6 +51,10 @@ public:
     uint32_t buffer_size_;
     uint32_t capacity_;
     uint32_t count_;
+    // Runtime dictionary cache only. Zero denotes a character absent from
+    // this range; dictionary codes start at one. Other encodings and UTF8
+    // supplementary characters continue to use the byte-keyed hash table.
+    ObFTWordCode bmp_codes_[65536];
     Entry data[1];
   } __attribute__((packed));
 
@@ -68,6 +72,7 @@ public:
   int find(const ObFTSingleWord &word, ObFTWordCode &code) const;
 
 private:
+  static int32_t bmp_index(const ObString &word);
   struct Header header_;
 } __attribute__((packed));
 

@@ -3040,7 +3040,20 @@ int ObTscCgService::generate_text_ir_spec_exprs(const ObTextRetrievalInfo &tr_in
     }
   }
 
-  if (OB_SUCC(ret) && nullptr != tr_info.pushdown_match_filter_) {
+  // Score elision proves that all MATCH consumers only test positive membership
+  // (including parameter constraints for comparisons against zero). The posting
+  // merge already guarantees this predicate for each emitted document. Keep the
+  // projected membership value below for rowkey lookup, but avoid evaluating the
+  // same boolean expression once per hit. Compound predicates still need a filter.
+  const ObRawExpr *match_filter = tr_info.pushdown_match_filter_;
+  const bool membership_filter = !tr_info.need_calc_relevance_ && match_filter != nullptr &&
+      ((match_filter->get_expr_type() == T_OP_BOOL && match_filter->get_param_count() == 1 &&
+        match_filter->get_param_expr(0) == tr_info.match_expr_) ||
+       (match_filter->get_expr_type() == T_OP_GT && match_filter->get_param_count() == 2 &&
+        match_filter->get_param_expr(0) == tr_info.match_expr_) ||
+       (match_filter->get_expr_type() == T_OP_LT && match_filter->get_param_count() == 2 &&
+        match_filter->get_param_expr(1) == tr_info.match_expr_));
+  if (OB_SUCC(ret) && match_filter != nullptr && !membership_filter) {
     if (OB_FAIL(cg_.generate_rt_expr(*tr_info.pushdown_match_filter_, text_ir_scan_ctdef.match_filter_))) {
     }
   }

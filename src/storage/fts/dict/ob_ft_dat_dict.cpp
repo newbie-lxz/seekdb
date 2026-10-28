@@ -299,18 +299,41 @@ template class ObFTDATReader<void>;
 
 ObArrayHashMap *ObFTDAT::get_map() { return reinterpret_cast<ObArrayHashMap *>(buff); }
 
+int32_t ObArrayHashMap::bmp_index(const ObString &word)
+{
+  int32_t index = -1;
+  const auto *p = reinterpret_cast<const unsigned char *>(word.ptr());
+  if (word.length() == 1 && p[0] < 0x80) {
+    index = p[0];
+  } else if (word.length() == 2 && p[0] >= 0xc2 && p[0] <= 0xdf
+             && (p[1] & 0xc0) == 0x80) {
+    index = ((p[0] & 0x1f) << 6) | (p[1] & 0x3f);
+  } else if (word.length() == 3 && p[0] >= 0xe0 && p[0] <= 0xef
+             && (p[1] & 0xc0) == 0x80 && (p[2] & 0xc0) == 0x80
+             && (p[0] != 0xe0 || p[1] >= 0xa0)
+             && (p[0] != 0xed || p[1] < 0xa0)) {
+    index = ((p[0] & 0x0f) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f);
+  }
+  return index;
+}
+
 int ObArrayHashMap::find(const ObFTSingleWord &word, ObFTWordCode &code) const
 {
   int ret = OB_ENTRY_NOT_EXIST;
+  const int32_t index = bmp_index(word.get_word());
+  if (index >= 0) {
+    code = header_.bmp_codes_[index];
+    return code != 0 ? OB_SUCCESS : OB_ENTRY_NOT_EXIST;
+  }
   uint64_t hash = word.get_word().hash();
-  uint64_t index = hash % header_.capacity_;
-  while (header_.data[index].used) {
-    if (header_.data[index].word == word) {
-      code = header_.data[index].code;
+  uint64_t bucket = hash % header_.capacity_;
+  while (header_.data[bucket].used) {
+    if (header_.data[bucket].word == word) {
+      code = header_.data[bucket].code;
       ret = OB_SUCCESS;
       break;
     } else {
-      index = (index + 3) % header_.capacity_;
+      bucket = (bucket + 3) % header_.capacity_;
     }
   }
   return ret;
@@ -319,6 +342,10 @@ int ObArrayHashMap::find(const ObFTSingleWord &word, ObFTWordCode &code) const
 int ObArrayHashMap::insert(const ObString &key, ObFTWordCode code)
 {
   int ret = OB_SUCCESS;
+  const int32_t bmp = bmp_index(key);
+  if (bmp >= 0) {
+    header_.bmp_codes_[bmp] = code;
+  }
   uint64_t hash = key.hash();
   uint64_t index = hash % header_.capacity_;
   while (header_.data[index].used) {
