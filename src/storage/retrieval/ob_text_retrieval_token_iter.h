@@ -132,6 +132,22 @@ public:
   virtual int advance_to(const ObDatum &id_datum) override;
   virtual int get_curr_score(double &score) const override;
   virtual int get_curr_id(const ObDatum *&id_datum) const override;
+  OB_INLINE int get_next_head(const ObDatum *&id_datum, double &score)
+  {
+    int ret = OB_SUCCESS;
+    if (cur_idx_ + 1 < count_) {
+      ++cur_idx_;
+    } else if (OB_FAIL(get_next_row())) {
+    } else if (cur_idx_ < 0 || cur_idx_ >= count_) {
+      ret = OB_ARRAY_OUT_OF_RANGE;
+    }
+    if (OB_SUCC(ret)) {
+      // The loaded batch owns both buffers until the next batch is requested.
+      id_datum = &doc_id_.get_data()[cur_idx_].get_datum();
+      score = relevance_expr_ != nullptr ? relevance_.get_data()[cur_idx_] : 1.0;
+    }
+    return ret;
+  }
 public:
   int get_token_doc_cnt(int64_t &token_doc_cnt) const { return token_iter_->get_token_doc_cnt(token_doc_cnt); }
   virtual int get_dim_max_score(double &score) override {

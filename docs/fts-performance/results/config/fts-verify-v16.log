@@ -1,0 +1,412 @@
+cn 8001
+beng 11000
+mixed 7332
+content 9333
+/dev/fd/63: 第 4 行： 38441 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+ok
+PASS_V15_REGRESSION
+PASS_V15_props
+PASS_V15_collation
+PASS_V15_merge
+PASS_V15_beng
+PASS_V15_v4
+PASS_V15_bmp
+cn 8001
+beng 11000
+mixed 7332
+content 9333
+PASS_V15_IDS_SCORES
+/dev/fd/63: 第 4 行： 38551 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+=== FTS Large Benchmark (label=v15-skip-abba) ===
+rows=20000 batch=500 rounds=3000 query_rounds=600 samples=5
+[0/5] SQL baseline ...
+  select1: sample=1/5 rounds=3000 total_ms=2027.611 avg_ms=0.6759
+  select1: sample=2/5 rounds=3000 total_ms=1921.655 avg_ms=0.6406
+  select1: sample=3/5 rounds=3000 total_ms=1967.688 avg_ms=0.6559
+  select1: sample=4/5 rounds=3000 total_ms=1997.209 avg_ms=0.6657
+  select1: sample=5/5 rounds=3000 total_ms=1994.298 avg_ms=0.6648
+[1-3/5] SKIP_LOAD=1, reuse existing fts_large_bench.docs and indexes
+  table rows: 20000
+[4/5] TOKENIZE hot-path ...
+  tokenize_ik: sample=1/5 rounds=3000 total_ms=2701.324 avg_ms=0.9004
+  tokenize_ik: sample=2/5 rounds=3000 total_ms=2877.266 avg_ms=0.9591
+  tokenize_ik: sample=3/5 rounds=3000 total_ms=2770.271 avg_ms=0.9234
+  tokenize_ik: sample=4/5 rounds=3000 total_ms=2735.429 avg_ms=0.9118
+  tokenize_ik: sample=5/5 rounds=3000 total_ms=2785.489 avg_ms=0.9285
+  tokenize_beng: sample=1/5 rounds=3000 total_ms=2271.736 avg_ms=0.7572
+  tokenize_beng: sample=2/5 rounds=3000 total_ms=2296.271 avg_ms=0.7654
+  tokenize_beng: sample=3/5 rounds=3000 total_ms=2270.795 avg_ms=0.7569
+  tokenize_beng: sample=4/5 rounds=3000 total_ms=2218.486 avg_ms=0.7395
+  tokenize_beng: sample=5/5 rounds=3000 total_ms=2230.476 avg_ms=0.7435
+[5/5] MATCH query ...
+  query_cn: warmup_hits=8001
+  query_cn: sample=1/5 rounds=600 total_ms=2304.479 avg_ms=3.8408
+  query_cn: sample=2/5 rounds=600 total_ms=2258.458 avg_ms=3.7641
+  query_cn: sample=3/5 rounds=600 total_ms=2225.237 avg_ms=3.7087
+  query_cn: sample=4/5 rounds=600 total_ms=2210.811 avg_ms=3.6847
+  query_cn: sample=5/5 rounds=600 total_ms=2255.641 avg_ms=3.7594
+  query_beng: warmup_hits=11000
+  query_beng: sample=1/5 rounds=600 total_ms=3190.538 avg_ms=5.3176
+  query_beng: sample=2/5 rounds=600 total_ms=3448.215 avg_ms=5.7470
+  query_beng: sample=3/5 rounds=600 total_ms=3649.384 avg_ms=6.0823
+  query_beng: sample=4/5 rounds=600 total_ms=3256.419 avg_ms=5.4274
+  query_beng: sample=5/5 rounds=600 total_ms=3261.358 avg_ms=5.4356
+  query_mixed: warmup_hits=7332
+  query_mixed: sample=1/5 rounds=600 total_ms=2623.935 avg_ms=4.3732
+  query_mixed: sample=2/5 rounds=600 total_ms=2487.324 avg_ms=4.1455
+  query_mixed: sample=3/5 rounds=600 total_ms=2511.899 avg_ms=4.1865
+  query_mixed: sample=4/5 rounds=600 total_ms=2542.948 avg_ms=4.2382
+  query_mixed: sample=5/5 rounds=600 total_ms=2508.777 avg_ms=4.1813
+  query_limit: warmup_hits=20
+  query_limit: sample=1/5 rounds=600 total_ms=4440.838 avg_ms=7.4014
+  query_limit: sample=2/5 rounds=600 total_ms=4464.788 avg_ms=7.4413
+  query_limit: sample=3/5 rounds=600 total_ms=4469.993 avg_ms=7.4500
+  query_limit: sample=4/5 rounds=600 total_ms=4448.505 avg_ms=7.4142
+  query_limit: sample=5/5 rounds=600 total_ms=4473.686 avg_ms=7.4561
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-28 23:32:37
+label:                  v15-skip-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.6606
+select1_stdev_ms:       0.0118
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.9246
+tokenize_ik_median_ms:  0.9234
+tokenize_ik_stdev_ms:   0.0198
+tokenize_beng_avg_ms:   0.7525
+tokenize_beng_median_ms:0.7569
+tokenize_beng_stdev_ms: 0.0096
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        3.7515
+query_cn_stdev_ms:      0.0538
+query_beng_hits:        11000
+query_beng_avg_ms:      5.6020
+query_beng_stdev_ms:    0.2796
+query_mixed_hits:       7332
+query_mixed_avg_ms:     4.2249
+query_mixed_stdev_ms:   0.0798
+query_limit_hits:       20
+query_limit_avg_ms:     7.4326
+query_limit_stdev_ms:   0.0212
+========================================
+Report appended to /home/chenyiting/seekdb-fts-bench/results/v16-v15-skip-abba.txt
+
+Compare before/after on these fields:
+  build_ik_all_sec, build_ik_content_sec, build_beng_en_sec, build_total_sec
+  tokenize_ik_avg_ms/stdev, tokenize_beng_avg_ms/stdev, select1_avg_ms as SQL-loop baseline
+  query_cn_avg_ms, query_beng_avg_ms, query_mixed_avg_ms, query_limit_avg_ms with *_hits
+PASS_V16_ABBA_v15
+/dev/fd/63: 第 4 行： 38700 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+=== FTS Large Benchmark (label=v16-skip-abba) ===
+rows=20000 batch=500 rounds=3000 query_rounds=600 samples=5
+[0/5] SQL baseline ...
+  select1: sample=1/5 rounds=3000 total_ms=1968.639 avg_ms=0.6562
+  select1: sample=2/5 rounds=3000 total_ms=2034.202 avg_ms=0.6781
+  select1: sample=3/5 rounds=3000 total_ms=2053.242 avg_ms=0.6844
+  select1: sample=4/5 rounds=3000 total_ms=1972.067 avg_ms=0.6574
+  select1: sample=5/5 rounds=3000 total_ms=2010.513 avg_ms=0.6702
+[1-3/5] SKIP_LOAD=1, reuse existing fts_large_bench.docs and indexes
+  table rows: 20000
+[4/5] TOKENIZE hot-path ...
+  tokenize_ik: sample=1/5 rounds=3000 total_ms=2734.326 avg_ms=0.9114
+  tokenize_ik: sample=2/5 rounds=3000 total_ms=2656.928 avg_ms=0.8856
+  tokenize_ik: sample=3/5 rounds=3000 total_ms=2689.331 avg_ms=0.8964
+  tokenize_ik: sample=4/5 rounds=3000 total_ms=2874.368 avg_ms=0.9581
+  tokenize_ik: sample=5/5 rounds=3000 total_ms=2708.715 avg_ms=0.9029
+  tokenize_beng: sample=1/5 rounds=3000 total_ms=2248.962 avg_ms=0.7497
+  tokenize_beng: sample=2/5 rounds=3000 total_ms=2190.699 avg_ms=0.7302
+  tokenize_beng: sample=3/5 rounds=3000 total_ms=2219.188 avg_ms=0.7397
+  tokenize_beng: sample=4/5 rounds=3000 total_ms=2259.659 avg_ms=0.7532
+  tokenize_beng: sample=5/5 rounds=3000 total_ms=2273.914 avg_ms=0.7580
+[5/5] MATCH query ...
+  query_cn: warmup_hits=8001
+  query_cn: sample=1/5 rounds=600 total_ms=2090.850 avg_ms=3.4848
+  query_cn: sample=2/5 rounds=600 total_ms=1967.102 avg_ms=3.2785
+  query_cn: sample=3/5 rounds=600 total_ms=2018.122 avg_ms=3.3635
+  query_cn: sample=4/5 rounds=600 total_ms=2024.165 avg_ms=3.3736
+  query_cn: sample=5/5 rounds=600 total_ms=1985.600 avg_ms=3.3093
+  query_beng: warmup_hits=11000
+  query_beng: sample=1/5 rounds=600 total_ms=2728.425 avg_ms=4.5474
+  query_beng: sample=2/5 rounds=600 total_ms=2692.646 avg_ms=4.4877
+  query_beng: sample=3/5 rounds=600 total_ms=2864.937 avg_ms=4.7749
+  query_beng: sample=4/5 rounds=600 total_ms=2945.835 avg_ms=4.9097
+  query_beng: sample=5/5 rounds=600 total_ms=2802.841 avg_ms=4.6714
+  query_mixed: warmup_hits=7332
+  query_mixed: sample=1/5 rounds=600 total_ms=2161.611 avg_ms=3.6027
+  query_mixed: sample=2/5 rounds=600 total_ms=2187.646 avg_ms=3.6461
+  query_mixed: sample=3/5 rounds=600 total_ms=2152.669 avg_ms=3.5878
+  query_mixed: sample=4/5 rounds=600 total_ms=2156.404 avg_ms=3.5940
+  query_mixed: sample=5/5 rounds=600 total_ms=2184.149 avg_ms=3.6402
+  query_limit: warmup_hits=20
+  query_limit: sample=1/5 rounds=600 total_ms=4378.810 avg_ms=7.2980
+  query_limit: sample=2/5 rounds=600 total_ms=4372.803 avg_ms=7.2880
+  query_limit: sample=3/5 rounds=600 total_ms=4410.366 avg_ms=7.3506
+  query_limit: sample=4/5 rounds=600 total_ms=4339.681 avg_ms=7.2328
+  query_limit: sample=5/5 rounds=600 total_ms=4425.387 avg_ms=7.3756
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-28 23:34:20
+label:                  v16-skip-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.6693
+select1_stdev_ms:       0.0111
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.9109
+tokenize_ik_median_ms:  0.9029
+tokenize_ik_stdev_ms:   0.0251
+tokenize_beng_avg_ms:   0.7462
+tokenize_beng_median_ms:0.7497
+tokenize_beng_stdev_ms: 0.0100
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        3.3619
+query_cn_stdev_ms:      0.0707
+query_beng_hits:        11000
+query_beng_avg_ms:      4.6782
+query_beng_stdev_ms:    0.1526
+query_mixed_hits:       7332
+query_mixed_avg_ms:     3.6142
+query_mixed_stdev_ms:   0.0242
+query_limit_hits:       20
+query_limit_avg_ms:     7.3090
+query_limit_stdev_ms:   0.0501
+========================================
+Report appended to /home/chenyiting/seekdb-fts-bench/results/v16-v16-skip-abba.txt
+
+Compare before/after on these fields:
+  build_ik_all_sec, build_ik_content_sec, build_beng_en_sec, build_total_sec
+  tokenize_ik_avg_ms/stdev, tokenize_beng_avg_ms/stdev, select1_avg_ms as SQL-loop baseline
+  query_cn_avg_ms, query_beng_avg_ms, query_mixed_avg_ms, query_limit_avg_ms with *_hits
+PASS_V16_ABBA_v16
+/dev/fd/63: 第 4 行： 39133 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+=== FTS Large Benchmark (label=v16-skip-abba) ===
+rows=20000 batch=500 rounds=3000 query_rounds=600 samples=5
+[0/5] SQL baseline ...
+  select1: sample=1/5 rounds=3000 total_ms=1955.528 avg_ms=0.6518
+  select1: sample=2/5 rounds=3000 total_ms=1980.531 avg_ms=0.6602
+  select1: sample=3/5 rounds=3000 total_ms=2007.370 avg_ms=0.6691
+  select1: sample=4/5 rounds=3000 total_ms=2004.188 avg_ms=0.6681
+  select1: sample=5/5 rounds=3000 total_ms=1974.105 avg_ms=0.6580
+[1-3/5] SKIP_LOAD=1, reuse existing fts_large_bench.docs and indexes
+  table rows: 20000
+[4/5] TOKENIZE hot-path ...
+  tokenize_ik: sample=1/5 rounds=3000 total_ms=2820.026 avg_ms=0.9400
+  tokenize_ik: sample=2/5 rounds=3000 total_ms=2744.550 avg_ms=0.9149
+  tokenize_ik: sample=3/5 rounds=3000 total_ms=2739.556 avg_ms=0.9132
+  tokenize_ik: sample=4/5 rounds=3000 total_ms=2766.840 avg_ms=0.9223
+  tokenize_ik: sample=5/5 rounds=3000 total_ms=2705.032 avg_ms=0.9017
+  tokenize_beng: sample=1/5 rounds=3000 total_ms=2225.751 avg_ms=0.7419
+  tokenize_beng: sample=2/5 rounds=3000 total_ms=2302.351 avg_ms=0.7675
+  tokenize_beng: sample=3/5 rounds=3000 total_ms=2262.772 avg_ms=0.7543
+  tokenize_beng: sample=4/5 rounds=3000 total_ms=2238.140 avg_ms=0.7460
+  tokenize_beng: sample=5/5 rounds=3000 total_ms=2232.320 avg_ms=0.7441
+[5/5] MATCH query ...
+  query_cn: warmup_hits=8001
+  query_cn: sample=1/5 rounds=600 total_ms=2033.634 avg_ms=3.3894
+  query_cn: sample=2/5 rounds=600 total_ms=2031.781 avg_ms=3.3863
+  query_cn: sample=3/5 rounds=600 total_ms=2101.693 avg_ms=3.5028
+  query_cn: sample=4/5 rounds=600 total_ms=2032.989 avg_ms=3.3883
+  query_cn: sample=5/5 rounds=600 total_ms=1932.570 avg_ms=3.2209
+  query_beng: warmup_hits=11000
+  query_beng: sample=1/5 rounds=600 total_ms=2813.411 avg_ms=4.6890
+  query_beng: sample=2/5 rounds=600 total_ms=2721.264 avg_ms=4.5354
+  query_beng: sample=3/5 rounds=600 total_ms=2985.736 avg_ms=4.9762
+  query_beng: sample=4/5 rounds=600 total_ms=2886.191 avg_ms=4.8103
+  query_beng: sample=5/5 rounds=600 total_ms=2705.619 avg_ms=4.5094
+  query_mixed: warmup_hits=7332
+  query_mixed: sample=1/5 rounds=600 total_ms=2194.171 avg_ms=3.6570
+  query_mixed: sample=2/5 rounds=600 total_ms=2171.626 avg_ms=3.6194
+  query_mixed: sample=3/5 rounds=600 total_ms=2205.949 avg_ms=3.6766
+  query_mixed: sample=4/5 rounds=600 total_ms=2101.918 avg_ms=3.5032
+  query_mixed: sample=5/5 rounds=600 total_ms=2140.825 avg_ms=3.5680
+  query_limit: warmup_hits=20
+  query_limit: sample=1/5 rounds=600 total_ms=4408.791 avg_ms=7.3480
+  query_limit: sample=2/5 rounds=600 total_ms=4423.820 avg_ms=7.3730
+  query_limit: sample=3/5 rounds=600 total_ms=4517.330 avg_ms=7.5289
+  query_limit: sample=4/5 rounds=600 total_ms=4420.986 avg_ms=7.3683
+  query_limit: sample=5/5 rounds=600 total_ms=4343.272 avg_ms=7.2388
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-28 23:36:04
+label:                  v16-skip-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.6614
+select1_stdev_ms:       0.0065
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.9184
+tokenize_ik_median_ms:  0.9149
+tokenize_ik_stdev_ms:   0.0126
+tokenize_beng_avg_ms:   0.7508
+tokenize_beng_median_ms:0.7460
+tokenize_beng_stdev_ms: 0.0094
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        3.3775
+query_cn_stdev_ms:      0.0901
+query_beng_hits:        11000
+query_beng_avg_ms:      4.7041
+query_beng_stdev_ms:    0.1743
+query_mixed_hits:       7332
+query_mixed_avg_ms:     3.6048
+query_mixed_stdev_ms:   0.0629
+query_limit_hits:       20
+query_limit_avg_ms:     7.3714
+query_limit_stdev_ms:   0.0927
+========================================
+Report appended to /home/chenyiting/seekdb-fts-bench/results/v16-v16-skip-abba.txt
+
+Compare before/after on these fields:
+  build_ik_all_sec, build_ik_content_sec, build_beng_en_sec, build_total_sec
+  tokenize_ik_avg_ms/stdev, tokenize_beng_avg_ms/stdev, select1_avg_ms as SQL-loop baseline
+  query_cn_avg_ms, query_beng_avg_ms, query_mixed_avg_ms, query_limit_avg_ms with *_hits
+PASS_V16_ABBA_v16
+/dev/fd/63: 第 4 行： 39554 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+=== FTS Large Benchmark (label=v15-skip-abba) ===
+rows=20000 batch=500 rounds=3000 query_rounds=600 samples=5
+[0/5] SQL baseline ...
+  select1: sample=1/5 rounds=3000 total_ms=2031.120 avg_ms=0.6770
+  select1: sample=2/5 rounds=3000 total_ms=1949.552 avg_ms=0.6499
+  select1: sample=3/5 rounds=3000 total_ms=1972.662 avg_ms=0.6576
+  select1: sample=4/5 rounds=3000 total_ms=1989.033 avg_ms=0.6630
+  select1: sample=5/5 rounds=3000 total_ms=1998.983 avg_ms=0.6663
+[1-3/5] SKIP_LOAD=1, reuse existing fts_large_bench.docs and indexes
+  table rows: 20000
+[4/5] TOKENIZE hot-path ...
+  tokenize_ik: sample=1/5 rounds=3000 total_ms=2699.976 avg_ms=0.9000
+  tokenize_ik: sample=2/5 rounds=3000 total_ms=2734.763 avg_ms=0.9116
+  tokenize_ik: sample=3/5 rounds=3000 total_ms=2730.208 avg_ms=0.9101
+  tokenize_ik: sample=4/5 rounds=3000 total_ms=2724.308 avg_ms=0.9081
+  tokenize_ik: sample=5/5 rounds=3000 total_ms=2791.990 avg_ms=0.9307
+  tokenize_beng: sample=1/5 rounds=3000 total_ms=2277.508 avg_ms=0.7592
+  tokenize_beng: sample=2/5 rounds=3000 total_ms=2270.384 avg_ms=0.7568
+  tokenize_beng: sample=3/5 rounds=3000 total_ms=2302.195 avg_ms=0.7674
+  tokenize_beng: sample=4/5 rounds=3000 total_ms=2237.014 avg_ms=0.7457
+  tokenize_beng: sample=5/5 rounds=3000 total_ms=2207.938 avg_ms=0.7360
+[5/5] MATCH query ...
+  query_cn: warmup_hits=8001
+  query_cn: sample=1/5 rounds=600 total_ms=2251.729 avg_ms=3.7529
+  query_cn: sample=2/5 rounds=600 total_ms=2318.907 avg_ms=3.8648
+  query_cn: sample=3/5 rounds=600 total_ms=2265.929 avg_ms=3.7765
+  query_cn: sample=4/5 rounds=600 total_ms=2229.719 avg_ms=3.7162
+  query_cn: sample=5/5 rounds=600 total_ms=2265.128 avg_ms=3.7752
+  query_beng: warmup_hits=11000
+  query_beng: sample=1/5 rounds=600 total_ms=3288.144 avg_ms=5.4802
+  query_beng: sample=2/5 rounds=600 total_ms=3678.547 avg_ms=6.1309
+  query_beng: sample=3/5 rounds=600 total_ms=3709.420 avg_ms=6.1824
+  query_beng: sample=4/5 rounds=600 total_ms=3244.604 avg_ms=5.4077
+  query_beng: sample=5/5 rounds=600 total_ms=3219.096 avg_ms=5.3652
+  query_mixed: warmup_hits=7332
+  query_mixed: sample=1/5 rounds=600 total_ms=2521.374 avg_ms=4.2023
+  query_mixed: sample=2/5 rounds=600 total_ms=2608.720 avg_ms=4.3479
+  query_mixed: sample=3/5 rounds=600 total_ms=2536.379 avg_ms=4.2273
+  query_mixed: sample=4/5 rounds=600 total_ms=2528.941 avg_ms=4.2149
+  query_mixed: sample=5/5 rounds=600 total_ms=2631.178 avg_ms=4.3853
+  query_limit: warmup_hits=20
+  query_limit: sample=1/5 rounds=600 total_ms=4498.768 avg_ms=7.4979
+  query_limit: sample=2/5 rounds=600 total_ms=4662.935 avg_ms=7.7716
+  query_limit: sample=3/5 rounds=600 total_ms=4462.003 avg_ms=7.4367
+  query_limit: sample=4/5 rounds=600 total_ms=4432.076 avg_ms=7.3868
+  query_limit: sample=5/5 rounds=600 total_ms=4471.254 avg_ms=7.4521
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-28 23:37:54
+label:                  v15-skip-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.6628
+select1_stdev_ms:       0.0090
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.9121
+tokenize_ik_median_ms:  0.9101
+tokenize_ik_stdev_ms:   0.0101
+tokenize_beng_avg_ms:   0.7530
+tokenize_beng_median_ms:0.7568
+tokenize_beng_stdev_ms: 0.0110
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        3.7771
+query_cn_stdev_ms:      0.0490
+query_beng_hits:        11000
+query_beng_avg_ms:      5.7133
+query_beng_stdev_ms:    0.3642
+query_mixed_hits:       7332
+query_mixed_avg_ms:     4.2755
+query_mixed_stdev_ms:   0.0757
+query_limit_hits:       20
+query_limit_avg_ms:     7.5090
+query_limit_stdev_ms:   0.1360
+========================================
+Report appended to /home/chenyiting/seekdb-fts-bench/results/v16-v15-skip-abba.txt
+
+Compare before/after on these fields:
+  build_ik_all_sec, build_ik_content_sec, build_beng_en_sec, build_total_sec
+  tokenize_ik_avg_ms/stdev, tokenize_beng_avg_ms/stdev, select1_avg_ms as SQL-loop baseline
+  query_cn_avg_ms, query_beng_avg_ms, query_mixed_avg_ms, query_limit_avg_ms with *_hits
+PASS_V16_ABBA_v15
+/dev/fd/63: 第 4 行： 40028 已杀死               bin/seekdb-"$label" --nodaemon -P 2881 --parameter memory_limit=2G --parameter datafile_size=128M --parameter datafile_next=128M --parameter datafile_maxsize=2G --parameter log_disk_size=2G --parameter syslog_disk_size=256M > results/"$label"-repeat-server.log 2>&1
+PASS_V16_COMPLETE

@@ -40,13 +40,11 @@ public:
         coll_type_(ObCollationType::CS_TYPE_INVALID),
         ctx_(nullptr),
         hub_(hub),
-        segmenters_(allocator_),
+        segmenters_{nullptr, nullptr, nullptr, nullptr},
         cache_main_(allocator),
         cache_quan_(allocator),
-        cache_stop_(allocator),
         dict_main_(nullptr),
-        dict_quan_(nullptr),
-        dict_stop_(nullptr)
+        dict_quan_(nullptr)
   {
   }
 
@@ -96,16 +94,14 @@ private:
   ObCollationType coll_type_;
   TokenizeContext *ctx_;
   ObFTDictHub *hub_;
-  ObList<ObIIKProcessor *, ObIAllocator> segmenters_;
+  ObIIKProcessor *segmenters_[4];
 
   // For now there's no change of dict in one query, so we can pin dict this level.
   ObFTCacheRangeContainer cache_main_;
   ObFTCacheRangeContainer cache_quan_;
-  ObFTCacheRangeContainer cache_stop_;
 
   ObIFTDict *dict_main_;
   ObIFTDict *dict_quan_;
-  ObIFTDict *dict_stop_;
 
   DISABLE_COPY_ASSIGN(ObIKFTParser);
 };

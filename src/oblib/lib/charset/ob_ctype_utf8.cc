@@ -120,7 +120,7 @@ static inline size_t ob_well_formed_len_utf8mb4(const ObCharsetInfo *cs,
   return (size_t) (b - b_start);
 }
 
-static int ob_mb_wc_utf8mb4(const ObCharsetInfo *cs __attribute__((unused)),
+static __attribute__((always_inline)) inline int ob_mb_wc_utf8mb4(const ObCharsetInfo *cs __attribute__((unused)),
                  ob_wc_t * pwc, const uchar *s, const uchar *e)
 {
   uchar c;
@@ -329,7 +329,7 @@ static int ob_strnncoll_utf8mb4(const ObCharsetInfo *cs,
   return (int) (t_is_prefix ? (dst - te) : ((se - src) - (te - dst)));
 }
 
-int __attribute__ ((noinline))  ob_strnncollsp_utf8mb4_help(
+static __attribute__((always_inline)) inline int ob_strnncollsp_utf8mb4_help(
     const unsigned char **s_, size_t srclen,
     const unsigned char **t_, size_t dstlen,
     const unsigned char **se_, const unsigned char **te_,
@@ -377,6 +377,12 @@ static int ob_strnncollsp_utf8mb4(const ObCharsetInfo *cs,
                        const unsigned char *dst, size_t dstlen,
                        bool diff_if_only_endspace_difference)
 {
+  // Sorted posting lists contain many identical terms. Equal byte strings
+  // compare equal even on the invalid-UTF8 binary fallback; avoid decoding
+  // their common characters and processing the end-space rule again.
+  if (srclen == dstlen && (srclen == 0 || src == dst || memcmp(src, dst, srclen) == 0)) {
+    return 0;
+  }
   int res;
   ob_wc_t src_wc = 0, dst_wc = 0;
   const unsigned char *se= src + srclen, *te= dst + dstlen;
@@ -387,14 +393,17 @@ static int ob_strnncollsp_utf8mb4(const ObCharsetInfo *cs,
     if ( s_res <= 0 || t_res <= 0 ) {
       return bincmp_utf8mb4(src, se, dst, te);
     }
-    ob_tosort_unicode(uni_plane, &src_wc, cs->state);
-    ob_tosort_unicode(uni_plane, &dst_wc, cs->state);
-    if ( src_wc != dst_wc ) {
-      return src_wc > dst_wc ? 1 : -1;
-    } else {
-      src +=s_res;
-      dst +=t_res;
+    // Identical decoded characters have identical weights. Common term
+    // prefixes need no case/accent table lookup on either side.
+    if (src_wc != dst_wc) {
+      ob_tosort_unicode(uni_plane, &src_wc, cs->state);
+      ob_tosort_unicode(uni_plane, &dst_wc, cs->state);
+      if (src_wc != dst_wc) {
+        return src_wc > dst_wc ? 1 : -1;
+      }
     }
+    src += s_res;
+    dst += t_res;
   }
   srclen = (size_t) (se-src);
   dstlen = (size_t) (te-dst);

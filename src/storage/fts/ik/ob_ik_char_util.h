@@ -52,6 +52,20 @@ public:
                                  const uint8_t char_len,
                                  CharType &type);
 
+  static CharType classify_unicode(const ob_wc_t unicode)
+  {
+    if (ObUnicodeBlockUtils::is_alpha(unicode)) {
+      return CharType::ENGLISH_LETTER;
+    } else if (ObUnicodeBlockUtils::is_arabic(unicode)) {
+      return CharType::ARABIC_LETTER;
+    } else if (ObUnicodeBlockUtils::is_chinese(unicode)) {
+      return CharType::CHINESE;
+    } else if (ObUnicodeBlockUtils::is_other_cjk(unicode)) {
+      return CharType::OTHER_CJK;
+    }
+    return CharType::USELESS;
+  }
+
   static int check_cn_number(ObCollationType coll_type,
                              const char *input,
                              const uint8_t char_len,
@@ -450,20 +464,16 @@ inline int ObFTCharUtil::do_classify(const char *input, const uint8_t char_len, 
 
   // Decode once for all categories, preserving their existing precedence.
   if (OB_FAIL(decode_unicode<CS_TYPE>(input, char_len, unicode))) {
-  } else if (ObUnicodeBlockUtils::is_alpha(unicode)) {
-    type = CharType::ENGLISH_LETTER;
-  } else if (ObUnicodeBlockUtils::is_arabic(unicode)) {
-    type = CharType::ARABIC_LETTER;
-  } else if (ObUnicodeBlockUtils::is_chinese(unicode)) {
-    type = CharType::CHINESE;
-  } else if (ObUnicodeBlockUtils::is_other_cjk(unicode)) {
-    type = CharType::OTHER_CJK;
-  } else if ((CS_TYPE == CHARSET_UTF16 || CS_TYPE == CHARSET_UTF16LE)
-             && ObUnicodeBlockUtils::check_high_surrogate(unicode)) {
-    type = CharType::SURROGATE_HIGH;
-  } else if ((CS_TYPE == CHARSET_UTF16 || CS_TYPE == CHARSET_UTF16LE)
-             && ObUnicodeBlockUtils::check_low_surrogate(unicode)) {
-    type = CharType::SURROGATE_LOW;
+  } else {
+    type = classify_unicode(unicode);
+    if (type == CharType::USELESS &&
+        (CS_TYPE == CHARSET_UTF16 || CS_TYPE == CHARSET_UTF16LE)) {
+      if (ObUnicodeBlockUtils::check_high_surrogate(unicode)) {
+        type = CharType::SURROGATE_HIGH;
+      } else if (ObUnicodeBlockUtils::check_low_surrogate(unicode)) {
+        type = CharType::SURROGATE_LOW;
+      }
+    }
   }
   return ret;
 }

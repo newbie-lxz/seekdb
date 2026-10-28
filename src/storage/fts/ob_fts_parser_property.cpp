@@ -1016,6 +1016,30 @@ int ObFTParserJsonProps::show_parser_properties(const ObFTParserJsonProps &prope
 int ObFTParserProperty::parse_for_parser_helper(const ObFTParser &parser, const ObString &json_str)
 {
   int ret = OB_SUCCESS;
+  // Parsing stored index properties is a pure conversion. Keep two bounded,
+  // thread-local entries so consecutive documents need not build a JSON tree
+  // for the same configuration. Only default-initialized destinations qualify:
+  // the existing API leaves unrelated fields unchanged on reused objects.
+  struct CachedParserProperty
+  {
+    ObFTParser parser_;
+    int32_t length_ = -1;
+    char json_[1024];
+    ObFTParserProperty property_;
+  };
+  static thread_local CachedParserProperty cached[2];
+  static thread_local uint32_t next_cache = 0;
+  const ObFTParserProperty defaults;
+  const bool cacheable = json_str.length() >= 0 && json_str.length() <= 1024 && is_equal(defaults);
+  if (cacheable) {
+    for (const CachedParserProperty &entry : cached) {
+      if (entry.length_ == json_str.length() && entry.parser_ == parser &&
+          (entry.length_ == 0 || MEMCMP(entry.json_, json_str.ptr(), entry.length_) == 0)) {
+        *this = entry.property_;
+        return OB_SUCCESS;
+      }
+    }
+  }
   ObFTParserJsonProps props;
   if (OB_FAIL(props.init())) {
   } else if (OB_FAIL(props.parse_from_valid_str(json_str))) {
@@ -1063,6 +1087,17 @@ int ObFTParserProperty::parse_for_parser_helper(const ObFTParser &parser, const 
       } else if (OB_FAIL(props.config_get_max_ngram_token_size(max_ngram_token_size_))) {
       }
     }
+  }
+  if (OB_SUCC(ret) && cacheable) {
+    CachedParserProperty &entry = cached[next_cache++ % 2];
+    entry.parser_ = parser;
+    entry.length_ = json_str.length();
+    if (entry.length_ > 0) {
+      MEMCPY(entry.json_, json_str.ptr(), entry.length_);
+    }
+    // Parsed string members refer only to the static configuration-name
+    // literals above; no JSON-tree or caller-owned storage escapes here.
+    entry.property_ = *this;
   }
   return ret;
 }

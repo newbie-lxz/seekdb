@@ -571,6 +571,25 @@ int ObCharset::strcmpsp(ObCollationType collation_type,
                         bool cmp_endspace)
 {
   int result = 0;
+  // Binary collation compares bytes and treats trailing spaces as data.
+  // It does not use charset tables or cmp_endspace.
+  if (collation_type == CS_TYPE_BINARY && str1_len >= 0 && str2_len >= 0 &&
+      (str1 != nullptr || str1_len == 0) && (str2 != nullptr || str2_len == 0)) {
+    const int64_t length = MIN(str1_len, str2_len);
+    const int cmp = length > 0 ? MEMCMP(str1, str2, length) : 0;
+    return cmp != 0 ? cmp : static_cast<int>(
+        static_cast<size_t>(str1_len) - static_cast<size_t>(str2_len));
+  }
+  // For this built-in collation, one initialized-charset lookup suffices.
+  if (collation_type == CS_TYPE_UTF8MB4_GENERAL_CI && str1_len >= 0 && str2_len >= 0 &&
+      (str1 != nullptr || str1_len == 0) && (str2 != nullptr || str2_len == 0)) {
+    const ObCharsetInfo *cs = get_charset(collation_type);
+    if (cs != nullptr) {
+      return cs->coll->strnncollsp(cs,
+          reinterpret_cast<const unsigned char *>(str1), str1_len,
+          reinterpret_cast<const unsigned char *>(str2), str2_len, cmp_endspace);
+    }
+  }
   if (is_argument_valid(collation_type, str1, str1_len, str2, str2_len)) {
     const ObCharsetInfo *cs = get_charset(collation_type);
     result = cs->coll->strnncollsp(cs,

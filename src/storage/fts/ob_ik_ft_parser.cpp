@@ -90,19 +90,11 @@ int ObIKFTParser::get_next_token(const char *&word,
         } else {
         }
       } else {
-        bool is_stop = false;
-        // if (!OB_ISNULL(dict_stop_)
-        //     && OB_FAIL(dict_stop_->match(ObString(len, output_word + offset), is_stop))) {
-        //   LOG_WARN("Failed to match stopwords", K(ret));
-        // } else
-        if (!is_stop) {
-          word = output_word + offset;
-          word_len = len;
-          char_cnt = cnt;
-          word_freq = 1;
-          accept_token = true;
-        } else {
-        }
+        word = output_word + offset;
+        word_len = len;
+        char_cnt = cnt;
+        word_freq = 1;
+        accept_token = true;
       }
     }
   }
@@ -135,10 +127,8 @@ int ObIKFTParser::process_one_char(TokenizeContext &ctx,
 {
   int ret = OB_SUCCESS;
   // proces by char with all segmenters
-  for (ObList<ObIIKProcessor *, ObIAllocator>::iterator iter = segmenters_.begin();
-       OB_SUCC(ret) && iter != segmenters_.end();
-       iter++) {
-    if (OB_FAIL((*iter)->do_process(ctx, ch, char_len, type))) {
+  for (int64_t i = 0; OB_SUCC(ret) && i < 4; ++i) {
+    if (OB_FAIL(segmenters_[i]->do_process(ctx, ch, char_len, type))) {
     }
   }
   return ret;
@@ -248,17 +238,14 @@ int ObIKFTParser::init_dict(const ObFTParserParam &param)
                               ObCharsetType::CHARSET_UTF8MB4,
                               ObCollationType::CS_TYPE_UTF8MB4_BIN);
 
-  ObFTDictDesc stopword_dict_desc("stopword",
-                                  ObFTDictType::DICT_IK_STOP,
-                                  ObCharsetType::CHARSET_UTF8MB4,
-                                  ObCollationType::CS_TYPE_UTF8MB4_BIN);
+  // Stopwords are filtered by ObAddWord using the global checker. The
+  // segmenter never consumed its separate IK stopword dictionary.
 
   if (should_read_newest_table()) {
     // clear dict cache, always false now
   } else {
     if (OB_FAIL(init_single_dict(main_dict_desc, cache_main_))) {
     } else if (OB_FAIL(init_single_dict(quan_dict_desc, cache_quan_))) {
-    } else if (OB_FAIL(init_single_dict(stopword_dict_desc, cache_stop_))) {
     }
   }
 
@@ -266,7 +253,6 @@ int ObIKFTParser::init_dict(const ObFTParserParam &param)
     // already logged.
   } else if (OB_FAIL(build_dict_from_cache(main_dict_desc, cache_main_, dict_main_))) {
   } else if (OB_FAIL(build_dict_from_cache(quan_dict_desc, cache_quan_, dict_quan_))) {
-  } else if (OB_FAIL(build_dict_from_cache(stopword_dict_desc, cache_stop_, dict_stop_))) {
   }
 
   return ret;
@@ -327,14 +313,17 @@ int ObIKFTParser::init_segmenter(const ObFTParserParam &param)
     ret = OB_ALLOCATE_MEMORY_FAILED;
   } else if (OB_ISNULL(surrogate_seg = OB_NEWx(ObIKSurrogateProcessor, &allocator_))) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
-  } else if (OB_FAIL(segmenters_.push_back(letter_seg))) {
-  } else if (FALSE_IT(letter_seg = nullptr)) {
-  } else if (OB_FAIL(segmenters_.push_back(cnqsg))) {
-  } else if (FALSE_IT(cnqsg = nullptr)) {
-  } else if (OB_FAIL(segmenters_.push_back(cjksg))) {
-  } else if (FALSE_IT(cjksg = nullptr)) {
-  } else if (OB_FAIL(segmenters_.push_back(surrogate_seg))) {
-  } else if (OB_FALSE_IT(surrogate_seg = nullptr)) {
+  } else {
+    // All four processors are owned only after initialization succeeds.
+    // Their fixed order is significant: quantifier runs before CJK.
+    segmenters_[0] = letter_seg;
+    segmenters_[1] = cnqsg;
+    segmenters_[2] = cjksg;
+    segmenters_[3] = surrogate_seg;
+    letter_seg = nullptr;
+    cnqsg = nullptr;
+    cjksg = nullptr;
+    surrogate_seg = nullptr;
   }
   // push back by order, quantifier is before cjk
 
@@ -352,31 +341,29 @@ void ObIKFTParser::reset()
   if (!OB_ISNULL(ctx_)) {
     ctx_->~TokenizeContext();
     allocator_.free(ctx_);
+    ctx_ = nullptr;
   }
 
-  for (ObIIKProcessor *segmenter : segmenters_) {
+  for (ObIIKProcessor *&segmenter : segmenters_) {
     if (!OB_ISNULL(segmenter)) {
       segmenter->~ObIIKProcessor();
       allocator_.free(segmenter);
+      segmenter = nullptr;
     }
   }
-  segmenters_.clear();
 
   cache_main_.reset();
   cache_quan_.reset();
-  cache_stop_.reset();
 
   if (!OB_ISNULL(dict_main_)) {
     dict_main_->~ObIFTDict();
     allocator_.free(dict_main_);
+    dict_main_ = nullptr;
   }
   if (!OB_ISNULL(dict_quan_)) {
     dict_quan_->~ObIFTDict();
     allocator_.free(dict_quan_);
-  }
-  if (!OB_ISNULL(dict_stop_)) {
-    dict_stop_->~ObIFTDict();
-    allocator_.free(dict_stop_);
+    dict_quan_ = nullptr;
   }
 
   is_inited_ = false;

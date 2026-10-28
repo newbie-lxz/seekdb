@@ -94,20 +94,19 @@ int ObTextDaaTIter::do_one_merge_round(int64_t &count)
     auto *token_iter = static_cast<ObTextRetrievalDaaTTokenIter *>(dim_iters_->get_data()[idx]);
     if (OB_ISNULL(token_iter)) {
       ret = OB_ERR_UNEXPECTED;
-    } else if (OB_FAIL(token_iter->get_next_row())) {
+    } else if (OB_FAIL(token_iter->get_next_head(ids[idx], small_merge_scores_[idx]))) {
       if (ret == OB_ITER_END) {
         ids[idx] = nullptr;
         ret = OB_SUCCESS;
       }
-    } else if (OB_FAIL(token_iter->get_curr_score(small_merge_scores_[idx]))) {
     } else if (OB_NOT_NULL(iter_param_->dim_weights_) &&
                FALSE_IT(small_merge_scores_[idx] = small_merge_scores_[idx] *
                    iter_param_->field_boost_ * iter_param_->dim_weights_->at(idx))) {
-    } else if (OB_FAIL(token_iter->get_curr_id(ids[idx]))) {
     }
   }
 
   int64_t smallest = -1;
+  uint32_t equal_heads = 0;
   ObSRMergeItem lhs;
   ObSRMergeItem rhs;
   for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
@@ -117,9 +116,13 @@ int ObTextDaaTIter::do_one_merge_round(int64_t &count)
       rhs.iter_idx_ = smallest;
       if (smallest < 0) {
         smallest = i;
+        equal_heads = 1U << i;
       } else if (OB_FAIL(merge_cmp_.cmp(lhs, rhs, cmp))) {
       } else if (cmp < 0) {
         smallest = i;
+        equal_heads = 1U << i;
+      } else if (cmp == 0) {
+        equal_heads |= 1U << i;
       }
     }
   }
@@ -133,16 +136,10 @@ int ObTextDaaTIter::do_one_merge_round(int64_t &count)
     // Equal document IDs must be collected in increasing iterator order, just
     // as in the simple merger, to preserve floating-point score accumulation.
     for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
-      if (ids[i] != nullptr) {
-        int64_t cmp = 0;
-        lhs.iter_idx_ = i;
-        rhs.iter_idx_ = smallest;
-        if (i != smallest && OB_FAIL(merge_cmp_.cmp(lhs, rhs, cmp))) {
-        } else if (cmp == 0) {
-          if (OB_FAIL(relevance_collector_->collect_one_dim(i, small_merge_scores_[i]))) {
-          } else {
-            next[next_round_cnt_++] = i;
-          }
+      if ((equal_heads & (1U << i)) != 0) {
+        if (OB_FAIL(relevance_collector_->collect_one_dim(i, small_merge_scores_[i]))) {
+        } else {
+          next[next_round_cnt_++] = i;
         }
       }
     }

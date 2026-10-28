@@ -102,6 +102,21 @@ int TokenizeContext::current_char_type(ObFTCharUtil::CharType &type)
 int TokenizeContext::prepare_next_char()
 {
   int ret = OB_SUCCESS;
+  if ((coll_type_ == CS_TYPE_UTF8MB4_GENERAL_CI || coll_type_ == CS_TYPE_UTF8MB4_BIN) &&
+      cursor_ < fulltext_len_) {
+    const auto *start = reinterpret_cast<const unsigned char *>(fulltext_ + cursor_);
+    const auto *end = reinterpret_cast<const unsigned char *>(fulltext_ + fulltext_len_);
+    ob_wc_t unicode = 0;
+    const int length = common::ob_charset_decode_unicode<CHARSET_UTF8MB4>(start, end, unicode);
+    if (length > 0) {
+      // The UTF8 decoder validates the character and returns its byte length;
+      // use its code point instead of validating and decoding it separately.
+      next_char_len_ = length;
+      next_char_type_ = ObFTCharUtil::classify_unicode(unicode);
+      return OB_SUCCESS;
+    }
+    // Preserve the original error mapping for malformed or truncated input.
+  }
   if (OB_FAIL(ObCharset::first_valid_char(coll_type_,
                                           fulltext_ + cursor_,
                                           fulltext_len_ - cursor_,

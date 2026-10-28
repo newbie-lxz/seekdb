@@ -375,6 +375,32 @@ int ObExprTokenize::parse_parser_properties(const ObExpr &expr,
 int ObExprTokenize::TokenizeParam::reform_parser_properties(const ObString &properties)
 {
   int ret = OB_SUCCESS;
+  struct CachedProperties
+  {
+    int32_t name_len_ = -1;
+    int32_t input_len_ = -1;
+    int32_t output_len_ = 0;
+    char name_[storage::OB_FT_PARSER_NAME_LENGTH];
+    char input_[1024];
+    char output_[2048];
+  };
+  static thread_local CachedProperties cached[2];
+  static thread_local uint32_t next_cache = 0;
+  // The argument can alias properties_, which is replaced by canonical JSON.
+  // Its original bytes remain owned by allocator_.
+  const ObString original = properties;
+  const bool cacheable = original.length() >= 0 && original.length() <= 1024 &&
+      parser_name_.length() > 0 && parser_name_.length() <= storage::OB_FT_PARSER_NAME_LENGTH;
+  if (cacheable) {
+    for (const CachedProperties &entry : cached) {
+      if (entry.input_len_ == original.length() && entry.name_len_ == parser_name_.length() &&
+          MEMCMP(entry.name_, parser_name_.ptr(), entry.name_len_) == 0 &&
+          (entry.input_len_ == 0 || MEMCMP(entry.input_, original.ptr(), entry.input_len_) == 0)) {
+        // Copy out rather than exposing mutable thread-local storage.
+        return ob_write_string(allocator_, ObString(entry.output_len_, entry.output_), properties_);
+      }
+    }
+  }
   storage::ObFTParserJsonProps parser_properties;
 
   if (OB_FAIL(parser_properties.init())) {
@@ -386,6 +412,19 @@ int ObExprTokenize::TokenizeParam::reform_parser_properties(const ObString &prop
   } else if (OB_FAIL(parser_properties.to_format_json(allocator_, properties_))) {
   }
 
+  if (OB_SUCC(ret) && cacheable && properties_.length() <= 2048) {
+    CachedProperties &entry = cached[next_cache++ % 2];
+    entry.name_len_ = parser_name_.length();
+    entry.input_len_ = original.length();
+    entry.output_len_ = properties_.length();
+    MEMCPY(entry.name_, parser_name_.ptr(), entry.name_len_);
+    if (entry.input_len_ > 0) {
+      MEMCPY(entry.input_, original.ptr(), entry.input_len_);
+    }
+    if (entry.output_len_ > 0) {
+      MEMCPY(entry.output_, properties_.ptr(), entry.output_len_);
+    }
+  }
   return ret;
 }
 
