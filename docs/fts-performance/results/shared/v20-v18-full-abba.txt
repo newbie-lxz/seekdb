@@ -1,0 +1,88 @@
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-29 08:15:21
+label:                  v18-full-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           200
+samples:                3
+warmup:                 30
+skip_load:              0
+----------------------------------------
+select1_avg_ms:         0.5393
+select1_stdev_ms:       0.0188
+raw_load_sec:           0.925
+raw_load_rows_per_sec:  21621.6
+build_ik_all_sec:       17.370
+build_ik_content_sec:   11.897
+build_beng_en_sec:      5.621
+build_total_sec:        34.921
+----------------------------------------
+tokenize_ik_avg_ms:     0.7852
+tokenize_ik_median_ms:  0.7995
+tokenize_ik_stdev_ms:   0.0258
+tokenize_beng_avg_ms:   0.5852
+tokenize_beng_median_ms:0.5775
+tokenize_beng_stdev_ms: 0.0141
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        2.6474
+query_cn_stdev_ms:      0.0486
+query_beng_hits:        11000
+query_beng_avg_ms:      3.8255
+query_beng_stdev_ms:    0.1380
+query_mixed_hits:       7332
+query_mixed_avg_ms:     2.8963
+query_mixed_stdev_ms:   0.0422
+query_limit_hits:       20
+query_limit_avg_ms:     5.4294
+query_limit_stdev_ms:   0.0712
+========================================
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-29 08:18:40
+label:                  v18-full-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           200
+samples:                3
+warmup:                 30
+skip_load:              0
+----------------------------------------
+select1_avg_ms:         0.6521
+select1_stdev_ms:       0.0534
+raw_load_sec:           0.724
+raw_load_rows_per_sec:  27624.3
+build_ik_all_sec:       14.795
+build_ik_content_sec:   12.092
+build_beng_en_sec:      5.839
+build_total_sec:        32.757
+----------------------------------------
+tokenize_ik_avg_ms:     0.7138
+tokenize_ik_median_ms:  0.7178
+tokenize_ik_stdev_ms:   0.0090
+tokenize_beng_avg_ms:   0.5882
+tokenize_beng_median_ms:0.5969
+tokenize_beng_stdev_ms: 0.0126
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        2.6623
+query_cn_stdev_ms:      0.0521
+query_beng_hits:        11000
+query_beng_avg_ms:      3.6940
+query_beng_stdev_ms:    0.1360
+query_mixed_hits:       7332
+query_mixed_avg_ms:     3.0458
+query_mixed_stdev_ms:   0.0637
+query_limit_hits:       20
+query_limit_avg_ms:     5.5611
+query_limit_stdev_ms:   0.0596
+========================================

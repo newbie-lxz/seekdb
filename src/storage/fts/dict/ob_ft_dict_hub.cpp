@@ -28,6 +28,64 @@ namespace oceanbase
 {
 namespace storage
 {
+struct ObFTDictHub::SharedBuiltinDictionary
+{
+  explicit SharedBuiltinDictionary(const ObFTDictType type)
+      : allocator_(ObMemAttr("FTBuiltinDict")), handles_(allocator_),
+        desc_(ObString::make_string(type == ObFTDictType::DICT_IK_MAIN ? "main_dict" : "quan_dict"),
+              type, CHARSET_UTF8MB4, CS_TYPE_UTF8MB4_BIN),
+        dictionary_(allocator_, &handles_, desc_)
+  {}
+
+  // Destruction order is significant: readers, pinned blocks, then allocator.
+  ObArenaAllocator allocator_;
+  ObFTCacheRangeContainer handles_;
+  ObFTDictDesc desc_;
+  ObFTRangeDict dictionary_;
+};
+
+int ObFTDictHub::get_builtin_dictionary(const ObFTDictType type, const ObIFTDict *&dictionary)
+{
+  int ret = OB_SUCCESS;
+  dictionary = nullptr;
+  if (!is_inited_) {
+    ret = OB_NOT_INIT;
+  } else if (type != ObFTDictType::DICT_IK_MAIN && type != ObFTDictType::DICT_IK_QUAN) {
+    ret = OB_INVALID_ARGUMENT;
+  } else {
+    auto &slot = type == ObFTDictType::DICT_IK_MAIN ? shared_main_ : shared_quan_;
+    SharedBuiltinDictionary *shared = slot.load(std::memory_order_acquire);
+    if (shared == nullptr) {
+      lib::ObMutexGuard guard(shared_lock_);
+      shared = slot.load(std::memory_order_acquire);
+      if (shared == nullptr) {
+        if (OB_ISNULL(shared = OB_NEW(SharedBuiltinDictionary, "FTBuiltinDict", type))) {
+          ret = OB_ALLOCATE_MEMORY_FAILED;
+        } else {
+          ret = load_cache(shared->desc_, shared->handles_);
+          if (ret == OB_ENTRY_NOT_EXIST) {
+            ret = build_cache(shared->desc_, shared->handles_);
+          }
+          if (OB_FAIL(ret)) {
+          } else if (OB_FAIL(shared->dictionary_.init())) {
+          } else {
+            // Publish only a complete immutable view with all cache handles pinned.
+            slot.store(shared, std::memory_order_release);
+          }
+          if (OB_FAIL(ret)) {
+            OB_DELETE(SharedBuiltinDictionary, "FTBuiltinDict", shared);
+            shared = nullptr;
+          }
+        }
+      }
+    }
+    if (OB_SUCC(ret)) {
+      dictionary = &shared->dictionary_;
+    }
+  }
+  return ret;
+}
+
 int ObFTDictHub::init()
 {
   static constexpr int K_MAX_DICT_BUCKET = 128; // for now, only built-in dicts.
@@ -43,7 +101,17 @@ int ObFTDictHub::init()
 int ObFTDictHub::destroy()
 {
   int ret = OB_SUCCESS;
+  // Query workers have stopped before FTS teardown. Release cache handles
+  // before the global dictionary/KV caches are destroyed.
   is_inited_ = false;
+  SharedBuiltinDictionary *main = shared_main_.exchange(nullptr, std::memory_order_acq_rel);
+  SharedBuiltinDictionary *quan = shared_quan_.exchange(nullptr, std::memory_order_acq_rel);
+  if (main != nullptr) {
+    OB_DELETE(SharedBuiltinDictionary, "FTBuiltinDict", main);
+  }
+  if (quan != nullptr) {
+    OB_DELETE(SharedBuiltinDictionary, "FTBuiltinDict", quan);
+  }
   return ret;
 }
 int ObFTDictHub::build_cache(const ObFTDictDesc &desc, ObFTCacheRangeContainer &container)

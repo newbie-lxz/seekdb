@@ -44,7 +44,7 @@ protected:
   virtual int init_before_wand_process() { return OB_SUCCESS; }
 
   int top_k_search();
-  int build_top_k_heap();
+  virtual int build_top_k_heap();
   int next_pivot(int64_t &pivot_iter_idx);
   int next_pivot_range(int64_t &skip_range_cnt);
   int evaluate_pivot(const int64_t pivot_iter_idx);

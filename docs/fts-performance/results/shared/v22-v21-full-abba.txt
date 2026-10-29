@@ -1,0 +1,88 @@
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-29 09:16:47
+label:                  v21-full-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.5363
+select1_stdev_ms:       0.0183
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.7079
+tokenize_ik_median_ms:  0.7065
+tokenize_ik_stdev_ms:   0.0166
+tokenize_beng_avg_ms:   0.6108
+tokenize_beng_median_ms:0.6202
+tokenize_beng_stdev_ms: 0.0160
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        2.6172
+query_cn_stdev_ms:      0.0561
+query_beng_hits:        11000
+query_beng_avg_ms:      3.4965
+query_beng_stdev_ms:    0.0770
+query_mixed_hits:       7332
+query_mixed_avg_ms:     2.7951
+query_mixed_stdev_ms:   0.0731
+query_limit_hits:       20
+query_limit_avg_ms:     5.9141
+query_limit_stdev_ms:   0.7770
+========================================
+========================================
+FTS Large Benchmark Report
+========================================
+timestamp:              2026-10-29 09:20:42
+label:                  v21-full-abba
+git_head:               ebaea0df
+git_dirty:              1
+rows:                   20000
+batch:                  500
+rounds:                 3000
+query_rounds:           600
+samples:                5
+warmup:                 30
+skip_load:              1
+----------------------------------------
+select1_avg_ms:         0.5207
+select1_stdev_ms:       0.0167
+raw_load_sec:           N/A
+raw_load_rows_per_sec:  N/A
+build_ik_all_sec:       N/A
+build_ik_content_sec:   N/A
+build_beng_en_sec:      N/A
+build_total_sec:        N/A
+----------------------------------------
+tokenize_ik_avg_ms:     0.7240
+tokenize_ik_median_ms:  0.7039
+tokenize_ik_stdev_ms:   0.0346
+tokenize_beng_avg_ms:   0.5917
+tokenize_beng_median_ms:0.5956
+tokenize_beng_stdev_ms: 0.0097
+----------------------------------------
+query_cn_hits:          8001
+query_cn_avg_ms:        2.6147
+query_cn_stdev_ms:      0.0466
+query_beng_hits:        11000
+query_beng_avg_ms:      3.4696
+query_beng_stdev_ms:    0.0643
+query_mixed_hits:       7332
+query_mixed_avg_ms:     2.8473
+query_mixed_stdev_ms:   0.0696
+query_limit_hits:       20
+query_limit_avg_ms:     5.4766
+query_limit_stdev_ms:   0.1497
+========================================

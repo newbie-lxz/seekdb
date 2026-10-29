@@ -85,6 +85,8 @@ public:
 protected:
   virtual int get_next_rows(const int64_t capacity, int64_t &count) override;
   virtual int init_before_wand_process() override;
+  bool prefer_full_scan() const;
+  virtual int build_top_k_heap() override;
 protected:
   ObBM25ParamEstimator bm25_param_estimator_;
 private:

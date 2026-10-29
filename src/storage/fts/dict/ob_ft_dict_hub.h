@@ -19,6 +19,8 @@
 
 #include "lib/charset/ob_charset.h"
 #include "lib/lock/ob_bucket_lock.h"
+#include "lib/lock/ob_mutex.h"
+#include <atomic>
 #include "storage/fts/dict/ob_ft_dict_def.h"
 
 namespace oceanbase
@@ -93,11 +95,13 @@ private:
 };
 
 class ObFTCacheRangeContainer;
+class ObIFTDict;
 class ObFTDictHub
 {
 public:
-  ObFTDictHub() : is_inited_(false), dict_map_(), rw_dict_lock_() {}
-  ~ObFTDictHub() {}
+  ObFTDictHub() : is_inited_(false), dict_map_(), rw_dict_lock_(),
+      shared_main_(nullptr), shared_quan_(nullptr), shared_lock_() {}
+  ~ObFTDictHub() { destroy(); }
 
   int init();
 
@@ -106,6 +110,10 @@ public:
   int build_cache(const ObFTDictDesc &desc, ObFTCacheRangeContainer &container);
 
   int load_cache(const ObFTDictDesc &desc, ObFTCacheRangeContainer &container);
+
+  // Only the immutable, compiled-in UTF8 IK main/quantifier dictionaries.
+  // The hub pins their backing cache blocks until FTS shutdown.
+  int get_builtin_dictionary(const ObFTDictType type, const ObIFTDict *&dictionary);
 
 private:
   int get_dict_info(const ObFTDictInfoKey &key, ObFTDictInfo &info);
@@ -118,6 +126,10 @@ private:
   // holds info of dict
   hash::ObHashMap<ObFTDictInfoKey, ObFTDictInfo> dict_map_;
   ObBucketLock rw_dict_lock_;
+  struct SharedBuiltinDictionary;
+  std::atomic<SharedBuiltinDictionary *> shared_main_;
+  std::atomic<SharedBuiltinDictionary *> shared_quan_;
+  lib::ObMutex shared_lock_;
 };
 
 } //  namespace storage

@@ -210,6 +210,88 @@ int ObTextBMWIter::get_next_rows(const int64_t capacity, int64_t &count)
   return ret;
 }
 
+bool ObTextBMWIter::prefer_full_scan() const
+{
+  // For a small index and few posting lists, merging scored rows can cost
+  // less than setting up and repeatedly evaluating block-max ranges. Keep
+  // the same collector and top-k heap, including their tie handling.
+  return dim_iters_ != nullptr && dim_iters_->count() >= 2 && dim_iters_->count() <= 3
+      && bm25_param_estimator_.is_estimated()
+      && bm25_param_estimator_.get_total_doc_cnt() > 0
+      && bm25_param_estimator_.get_total_doc_cnt() <= 32768;
+}
+
+int ObTextBMWIter::build_top_k_heap()
+{
+  if (!prefer_full_scan()) {
+    return ObSRBMWIterImpl::build_top_k_heap();
+  }
+  int ret = OB_SUCCESS;
+  double scores[3] = {};
+  const ObDatum **ids = iter_domain_ids_.get_data();
+  int64_t *next = next_round_iter_idxes_.get_data();
+  if (!top_k_heap_.empty()) {
+    ret = OB_ERR_UNEXPECTED;
+  }
+  while (OB_SUCC(ret)) {
+    for (int64_t i = 0; OB_SUCC(ret) && i < next_round_cnt_; ++i) {
+      const int64_t idx = next[i];
+      auto *iter = static_cast<ObTextRetrievalBlockMaxIter *>(dim_iters_->get_data()[idx]);
+      if (OB_ISNULL(iter)) {
+        ret = OB_ERR_UNEXPECTED;
+      } else if (OB_FAIL(iter->get_next_head(ids[idx], scores[idx]))) {
+        if (ret == OB_ITER_END) {
+          ids[idx] = nullptr;
+          ret = OB_SUCCESS;
+        }
+      } else if (OB_NOT_NULL(iter_param_->dim_weights_)) {
+        scores[idx] = scores[idx] * iter_param_->field_boost_ * iter_param_->dim_weights_->at(idx);
+      }
+    }
+    int64_t smallest = -1;
+    uint32_t equal_heads = 0;
+    ObSRMergeItem lhs;
+    ObSRMergeItem rhs;
+    for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
+      if (ids[i] != nullptr) {
+        int64_t cmp = 0;
+        lhs.iter_idx_ = i;
+        rhs.iter_idx_ = smallest;
+        if (smallest < 0) {
+          smallest = i;
+          equal_heads = 1U << i;
+        } else if (OB_FAIL(merge_cmp_.cmp(lhs, rhs, cmp))) {
+        } else if (cmp < 0) {
+          smallest = i;
+          equal_heads = 1U << i;
+        } else if (cmp == 0) {
+          equal_heads |= 1U << i;
+        }
+      }
+    }
+    if (OB_SUCC(ret) && smallest < 0) {
+      ret = OB_ITER_END;
+    } else if (OB_SUCC(ret)) {
+      next_round_cnt_ = 0;
+      for (int64_t i = 0; OB_SUCC(ret) && i < dim_iters_->count(); ++i) {
+        if ((equal_heads & (1U << i)) != 0) {
+          if (OB_FAIL(relevance_collector_->collect_one_dim(i, scores[i]))) {
+          } else {
+            next[next_round_cnt_++] = i;
+          }
+        }
+      }
+      double relevance = 0.0;
+      bool need_project = false;
+      if (OB_FAIL(ret)) {
+      } else if (OB_FAIL(relevance_collector_->get_result(relevance, need_project))) {
+      } else if (need_project && OB_FAIL(process_collected_row(*ids[smallest], relevance))) {
+      }
+    }
+  }
+  return ret;
+}
+
 int ObTextBMWIter::init_before_wand_process()
 {
   int ret = OB_SUCCESS;

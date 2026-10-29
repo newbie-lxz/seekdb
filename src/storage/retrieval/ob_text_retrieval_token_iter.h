@@ -189,6 +189,7 @@ public:
   void reuse();
 
   virtual int get_next_row() override;
+  int get_next_head(const ObDatum *&id, double &score);
   virtual int get_next_batch(const int64_t capacity, int64_t &count) override;
   virtual int advance_to(const ObDatum &id_datum) override;
 

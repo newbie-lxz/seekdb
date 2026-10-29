@@ -308,7 +308,7 @@ int ObFTRangeDict::init()
   } else {
     if (OB_FAIL(build_dict_from_cache(*range_container_))) {
     }
-    is_inited_ = true;
+    is_inited_ = OB_SUCC(ret);
   }
   return ret;
 }

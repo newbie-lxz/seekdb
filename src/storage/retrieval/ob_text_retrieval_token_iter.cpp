@@ -674,6 +674,20 @@ void ObTextRetrievalBlockMaxIter::reuse()
   dim_max_score_ = 0;
 }
 
+int ObTextRetrievalBlockMaxIter::get_next_head(const ObDatum *&id, double &score)
+{
+  int ret = OB_SUCCESS;
+  if (IS_NOT_INIT) {
+    ret = OB_NOT_INIT;
+  } else if (OB_UNLIKELY(in_shallow_status_)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (OB_FAIL(token_iter_.get_next_head(curr_id_, score))) {
+  } else {
+    id = curr_id_;
+  }
+  return ret;
+}
+
 int ObTextRetrievalBlockMaxIter::get_next_row()
 {
   int ret = OB_SUCCESS;

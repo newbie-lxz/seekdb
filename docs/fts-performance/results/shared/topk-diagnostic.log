@@ -1,0 +1,20 @@
+{"label": "v21", "q": "database", "seconds": 2.0312904110032832, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database missingtoken", "seconds": 2.08081860600214, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database audit", "seconds": 3.124352044003899, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database performance audit", "seconds": 3.4809475020010723, "returncode": 0, "error": ""}
+{"label": "v21", "q": "missingtoken othermissing", "seconds": 0.5240220380001119, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database", "seconds": 2.080295057996409, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database missingtoken", "seconds": 1.1718104780011345, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database audit", "seconds": 1.615253579999262, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database performance audit", "seconds": 2.1264138799961074, "returncode": 0, "error": ""}
+{"label": "v23", "q": "missingtoken othermissing", "seconds": 0.5237270560028264, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database", "seconds": 2.095163785001205, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database missingtoken", "seconds": 1.1197552449957584, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database audit", "seconds": 1.6689676249952754, "returncode": 0, "error": ""}
+{"label": "v23", "q": "database performance audit", "seconds": 2.222688317000575, "returncode": 0, "error": ""}
+{"label": "v23", "q": "missingtoken othermissing", "seconds": 0.5117653409979539, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database", "seconds": 2.1360556799991173, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database missingtoken", "seconds": 1.9687282480008435, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database audit", "seconds": 3.0672345779967145, "returncode": 0, "error": ""}
+{"label": "v21", "q": "database performance audit", "seconds": 3.487679552003101, "returncode": 0, "error": ""}
+{"label": "v21", "q": "missingtoken othermissing", "seconds": 0.5357570449996274, "returncode": 0, "error": ""}
