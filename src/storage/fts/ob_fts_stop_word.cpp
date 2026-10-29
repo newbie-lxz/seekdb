@@ -26,6 +26,48 @@ namespace oceanbase
 {
 namespace storage
 {
+namespace
+{
+constexpr uint64_t stopword_key(const char *word, uint64_t key = 0)
+{
+  return *word == '\0' ? key : stopword_key(word + 1, (key << 8) | static_cast<unsigned char>(*word));
+}
+
+bool ascii_stopword(const ObString &word, bool &is_stopword)
+{
+  int64_t length = word.length();
+  // general_ci ignores trailing ASCII spaces and folds ASCII letter case.
+  while (length > 0 && word.ptr()[length - 1] == ' ') { --length; }
+  uint64_t key = 0;
+  for (int64_t i = 0; i < length; ++i) {
+    unsigned char ch = static_cast<unsigned char>(word.ptr()[i]);
+    if (ch >= 0x80) { return false; }
+    ch = ch >= 'A' && ch <= 'Z' ? ch + ('a' - 'A') : ch;
+    key = (key << 8) | ch;
+  }
+  is_stopword = false;
+  // Up to five bytes fit without truncation. Leading NULs must not alias
+  // shorter words; embedded and trailing NULs remain encoded in the key.
+  if (length > 0 && length <= 5 && word.ptr()[0] != '\0') {
+    switch (key) {
+    case stopword_key("a"): case stopword_key("about"): case stopword_key("an"):
+    case stopword_key("are"): case stopword_key("as"): case stopword_key("at"):
+    case stopword_key("be"): case stopword_key("by"): case stopword_key("com"):
+    case stopword_key("de"): case stopword_key("en"): case stopword_key("for"):
+    case stopword_key("from"): case stopword_key("how"): case stopword_key("i"):
+    case stopword_key("in"): case stopword_key("is"): case stopword_key("it"):
+    case stopword_key("la"): case stopword_key("of"): case stopword_key("on"):
+    case stopword_key("or"): case stopword_key("that"): case stopword_key("the"):
+    case stopword_key("this"): case stopword_key("to"): case stopword_key("was"):
+    case stopword_key("what"): case stopword_key("when"): case stopword_key("where"):
+    case stopword_key("who"): case stopword_key("will"): case stopword_key("with"):
+    case stopword_key("und"): case stopword_key("www"):
+      is_stopword = true;
+    }
+  }
+  return true;
+}
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // class ObStopWordChecker
@@ -87,6 +129,9 @@ int ObStopWordChecker::check_stopword(const ObFTWord &word, bool &is_stopword)
     if (ObCharset::is_valid_collation(word.get_collation_type())
         && CHARSET_UTF8MB4 == ObCharset::charset_type_by_coll(word.get_collation_type())) {
       cmp_str = word.get_word().get_string();
+      if (ascii_stopword(cmp_str, is_stopword)) {
+        return OB_SUCCESS;
+      }
       ObFTWord converted(cmp_str.length(), cmp_str.ptr(), stopword_type_);
       ret = stopword_set_.exist_refactored(converted);
     } else {
